@@ -6,63 +6,51 @@ import (
 	"io"
 	"net/http"
 	"reflect"
+
+	"comparator/internal/comparator/dtos"
 )
 
-// Estructura para capturar input del usuario
-type RequestDetails struct {
-	URL     string            `json:"url"`
-	Headers map[string]string `json:"headers"`
-	Params  map[string]string `json:"params"`
+type Service struct {
 }
 
-// Estructura para almacenar las diferencias
-type CompareResponse struct {
-	StatusCodes     []int                    `json:"status_codes"`
-	Headers         map[string][]string      `json:"headers"`
-	BodyDifferences map[string][]interface{} `json:"body_differences"`
+func NewComparatorService() *Service {
+	return &Service{}
 }
 
-type ComparatorService struct {
-}
+func (s *Service) CompareURLs(url1 string, url2 string) dtos.CompareResponse {
 
-func NewComparatorService() *ComparatorService {
-	return &ComparatorService{}
-}
-
-func (c *ComparatorService) CompareURLs(url1 string, url2 string) CompareResponse {
-
-	request1 := RequestDetails{
+	request1 := dtos.RequestDetails{
 		URL: "https://pokeapi.co/api/v2/pokemon/ditto",
 		//Headers: map[string]string{"Authorization": "Bearer token1"},
 		//Params: map[string]string{"param1": "value1"},
 	}
 
-	request2 := RequestDetails{
+	request2 := dtos.RequestDetails{
 		URL: "https://pokeapi.co/api/v2/pokemon/pikachu",
 		//Headers: map[string]string{"Authorization": "Bearer token2"},
 		//Params: map[string]string{"param2": "value2"},
 	}
 
 	// Realizar las peticiones HTTP
-	response1, err := c.makeRequest(request1)
+	response1, err := s.makeRequest(request1)
 	if err != nil {
 		fmt.Println("Error en la petición 1:", err)
-		return CompareResponse{}
+		return dtos.CompareResponse{}
 	}
 
-	response2, err := c.makeRequest(request2)
+	response2, err := s.makeRequest(request2)
 	if err != nil {
 		fmt.Println("Error en la petición 2:", err)
-		return CompareResponse{}
+		return dtos.CompareResponse{}
 	}
 
-	differences := c.compareResponses(response1, response2)
+	differences := s.compareResponses(response1, response2)
 
 	return differences
 }
 
 // Función para realizar la petición HTTP
-func (c *ComparatorService) makeRequest(reqDetails RequestDetails) (*http.Response, error) {
+func (s *Service) makeRequest(reqDetails dtos.RequestDetails) (*http.Response, error) {
 	client := &http.Client{}
 
 	// Construir la URL con parámetros
@@ -88,8 +76,8 @@ func (c *ComparatorService) makeRequest(reqDetails RequestDetails) (*http.Respon
 }
 
 // Función para comparar las respuestas HTTP
-func (c *ComparatorService) compareResponses(resp1, resp2 *http.Response) CompareResponse {
-	differences := CompareResponse{
+func (s *Service) compareResponses(resp1, resp2 *http.Response) dtos.CompareResponse {
+	differences := dtos.CompareResponse{
 		Headers:         make(map[string][]string),
 		BodyDifferences: make(map[string][]interface{}),
 	}
@@ -120,14 +108,14 @@ func (c *ComparatorService) compareResponses(resp1, resp2 *http.Response) Compar
 		differences.BodyDifferences["error"] = []interface{}{string(body1), string(body2)}
 	} else {
 		// Comparar los JSON
-		c.compareJSON(json1, json2, "", differences.BodyDifferences)
+		s.compareJSON(json1, json2, "", differences.BodyDifferences)
 	}
 
 	return differences
 }
 
 // Función para comparar JSONs
-func (c *ComparatorService) compareJSON(json1, json2 map[string]interface{}, prefix string, differences map[string][]interface{}) {
+func (s *Service) compareJSON(json1, json2 map[string]interface{}, prefix string, differences map[string][]interface{}) {
 	for key, val1 := range json1 {
 		fullKey := key
 		if prefix != "" {

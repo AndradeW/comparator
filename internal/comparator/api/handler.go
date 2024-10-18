@@ -4,38 +4,32 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"comparator/internal/comparator/comparator"
+	"comparator/internal/comparator/dtos"
 )
 
-type comparatorService interface {
-	CompareURLs(url1 string, url2 string) comparator.CompareResponse
-}
-
 type Handler struct {
-	ComparatorService comparatorService
+	service comparatorService
 }
 
 func NewHandler(comparatorService comparatorService) *Handler {
-	return &Handler{ComparatorService: comparatorService}
+	return &Handler{service: comparatorService}
 }
 
-// Estructura para recibir datos desde el frontend
-type CompareRequest struct {
-	URL1 string `json:"url1"`
-	URL2 string `json:"url2"`
+type comparatorService interface {
+	CompareURLs(url1 string, url2 string) dtos.CompareResponse
 }
 
 func (h *Handler) CompareHandler(w http.ResponseWriter, r *http.Request) {
 
-	var req CompareRequest
+	var req dtos.CompareRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	differences := h.ComparatorService.CompareURLs(req.URL1, req.URL2)
+	differences := h.service.CompareURLs(req.URL1, req.URL2)
 
-	response := comparator.CompareResponse{
+	response := dtos.CompareResponse{
 		StatusCodes:     differences.StatusCodes,
 		Headers:         differences.Headers,
 		BodyDifferences: differences.BodyDifferences,

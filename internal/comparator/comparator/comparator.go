@@ -1,4 +1,4 @@
-package main
+package comparator
 
 import (
 	"encoding/json"
@@ -16,14 +16,14 @@ type RequestDetails struct {
 }
 
 // Estructura para almacenar las diferencias
-type Differences struct {
+type CompareResponse struct {
 	StatusCodes     []int                    `json:"status_codes"`
 	Headers         map[string][]string      `json:"headers"`
 	BodyDifferences map[string][]interface{} `json:"body_differences"`
 }
 
-func main() {
-	// Ejemplo de input del usuario
+func CompareURLs(url1 string, url2 string) CompareResponse {
+
 	request1 := RequestDetails{
 		URL: "https://pokeapi.co/api/v2/pokemon/ditto",
 		//Headers: map[string]string{"Authorization": "Bearer token1"},
@@ -40,26 +40,18 @@ func main() {
 	response1, err := makeRequest(request1)
 	if err != nil {
 		fmt.Println("Error en la petición 1:", err)
-		return
+		return CompareResponse{}
 	}
 
 	response2, err := makeRequest(request2)
 	if err != nil {
 		fmt.Println("Error en la petición 2:", err)
-		return
+		return CompareResponse{}
 	}
 
-	// Comparar las respuestas
 	differences := compareResponses(response1, response2)
 
-	// Mostrar el JSON con las diferencias
-	differencesJSON, err := json.MarshalIndent(differences, "", "  ")
-	if err != nil {
-		fmt.Println("Error al convertir diferencias a JSON:", err)
-		return
-	}
-
-	fmt.Println(string(differencesJSON))
+	return differences
 }
 
 // Función para realizar la petición HTTP
@@ -89,8 +81,8 @@ func makeRequest(reqDetails RequestDetails) (*http.Response, error) {
 }
 
 // Función para comparar las respuestas HTTP
-func compareResponses(resp1, resp2 *http.Response) Differences {
-	differences := Differences{
+func compareResponses(resp1, resp2 *http.Response) CompareResponse {
+	differences := CompareResponse{
 		Headers:         make(map[string][]string),
 		BodyDifferences: make(map[string][]interface{}),
 	}

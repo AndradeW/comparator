@@ -11,10 +11,11 @@ import (
 )
 
 type Service struct {
+	client *http.Client
 }
 
-func NewComparatorService() *Service {
-	return &Service{}
+func NewComparatorService(client *http.Client) *Service {
+	return &Service{client: client}
 }
 
 func (s *Service) CompareRequest(request dtos.Request) dtos.CompareResponse {
@@ -38,7 +39,6 @@ func (s *Service) CompareRequest(request dtos.Request) dtos.CompareResponse {
 
 // Función para realizar la petición HTTP
 func (s *Service) makeRequest(reqDetails dtos.RequestDetails) (*http.Response, error) {
-	client := &http.Client{}
 
 	// Construir la URL con parámetros
 	req, err := http.NewRequest("GET", reqDetails.URL, nil)
@@ -59,7 +59,7 @@ func (s *Service) makeRequest(reqDetails dtos.RequestDetails) (*http.Response, e
 	req.URL.RawQuery = q.Encode()
 
 	// Hacer la petición
-	return client.Do(req)
+	return s.client.Do(req)
 }
 
 // Función para comparar las respuestas HTTP

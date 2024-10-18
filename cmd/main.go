@@ -13,7 +13,9 @@ func main() {
 
 	server := http.NewServeMux()
 
-	handler := api.NewHandler(comparator.NewComparatorService())
+	client := &http.Client{} //TODO create struct
+
+	handler := api.NewHandler(comparator.NewComparatorService(client))
 
 	server.HandleFunc("POST /compare", handler.CompareHandler)
 

@@ -7,13 +7,16 @@ import (
 	"comparator/internal/comparator/comparator"
 )
 
+type Handler struct {
+}
+
 // Estructura para recibir datos desde el frontend
 type CompareRequest struct {
 	URL1 string `json:"url1"`
 	URL2 string `json:"url2"`
 }
 
-func CompareHandler(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) CompareHandler(w http.ResponseWriter, r *http.Request) {
 
 	var req CompareRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

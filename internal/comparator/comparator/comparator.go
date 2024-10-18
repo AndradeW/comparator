@@ -17,28 +17,15 @@ func NewComparatorService() *Service {
 	return &Service{}
 }
 
-func (s *Service) CompareURLs(url1 string, url2 string) dtos.CompareResponse {
+func (s *Service) CompareRequest(request dtos.Request) dtos.CompareResponse {
 
-	request1 := dtos.RequestDetails{
-		URL: "https://pokeapi.co/api/v2/pokemon/ditto",
-		//Headers: map[string]string{"Authorization": "Bearer token1"},
-		//Params: map[string]string{"param1": "value1"},
-	}
-
-	request2 := dtos.RequestDetails{
-		URL: "https://pokeapi.co/api/v2/pokemon/pikachu",
-		//Headers: map[string]string{"Authorization": "Bearer token2"},
-		//Params: map[string]string{"param2": "value2"},
-	}
-
-	// Realizar las peticiones HTTP
-	response1, err := s.makeRequest(request1)
+	response1, err := s.makeRequest(request.Request1)
 	if err != nil {
 		fmt.Println("Error en la petición 1:", err)
 		return dtos.CompareResponse{}
 	}
 
-	response2, err := s.makeRequest(request2)
+	response2, err := s.makeRequest(request.Request2)
 	if err != nil {
 		fmt.Println("Error en la petición 2:", err)
 		return dtos.CompareResponse{}

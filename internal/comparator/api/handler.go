@@ -16,18 +16,18 @@ func NewHandler(comparatorService comparatorService) *Handler {
 }
 
 type comparatorService interface {
-	CompareURLs(url1 string, url2 string) dtos.CompareResponse
+	CompareRequest(request dtos.Request) dtos.CompareResponse
 }
 
 func (h *Handler) CompareHandler(w http.ResponseWriter, r *http.Request) {
 
-	var req dtos.CompareRequest
+	var req dtos.Request
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	differences := h.service.CompareURLs(req.URL1, req.URL2)
+	differences := h.service.CompareRequest(req)
 
 	response := dtos.CompareResponse{
 		StatusCodes:     differences.StatusCodes,

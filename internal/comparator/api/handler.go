@@ -7,7 +7,16 @@ import (
 	"comparator/internal/comparator/comparator"
 )
 
+type comparatorService interface {
+	CompareURLs(url1 string, url2 string) comparator.CompareResponse
+}
+
 type Handler struct {
+	ComparatorService comparatorService
+}
+
+func NewHandler(comparatorService comparatorService) *Handler {
+	return &Handler{ComparatorService: comparatorService}
 }
 
 // Estructura para recibir datos desde el frontend
@@ -24,7 +33,7 @@ func (h *Handler) CompareHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	differences := comparator.CompareURLs(req.URL1, req.URL2)
+	differences := h.ComparatorService.CompareURLs(req.URL1, req.URL2)
 
 	response := comparator.CompareResponse{
 		StatusCodes:     differences.StatusCodes,

@@ -6,13 +6,14 @@ import (
 
 	"comparator/config"
 	"comparator/internal/comparator/api"
+	"comparator/internal/comparator/comparator"
 )
 
 func main() {
 
 	server := http.NewServeMux()
 
-	handler := api.Handler{}
+	handler := api.NewHandler(comparator.NewComparatorService())
 
 	server.HandleFunc("POST /compare", handler.CompareHandler)
 

@@ -22,7 +22,14 @@ type CompareResponse struct {
 	BodyDifferences map[string][]interface{} `json:"body_differences"`
 }
 
-func CompareURLs(url1 string, url2 string) CompareResponse {
+type ComparatorService struct {
+}
+
+func NewComparatorService() *ComparatorService {
+	return &ComparatorService{}
+}
+
+func (c *ComparatorService) CompareURLs(url1 string, url2 string) CompareResponse {
 
 	request1 := RequestDetails{
 		URL: "https://pokeapi.co/api/v2/pokemon/ditto",
@@ -37,25 +44,25 @@ func CompareURLs(url1 string, url2 string) CompareResponse {
 	}
 
 	// Realizar las peticiones HTTP
-	response1, err := makeRequest(request1)
+	response1, err := c.makeRequest(request1)
 	if err != nil {
 		fmt.Println("Error en la petición 1:", err)
 		return CompareResponse{}
 	}
 
-	response2, err := makeRequest(request2)
+	response2, err := c.makeRequest(request2)
 	if err != nil {
 		fmt.Println("Error en la petición 2:", err)
 		return CompareResponse{}
 	}
 
-	differences := compareResponses(response1, response2)
+	differences := c.compareResponses(response1, response2)
 
 	return differences
 }
 
 // Función para realizar la petición HTTP
-func makeRequest(reqDetails RequestDetails) (*http.Response, error) {
+func (c *ComparatorService) makeRequest(reqDetails RequestDetails) (*http.Response, error) {
 	client := &http.Client{}
 
 	// Construir la URL con parámetros
@@ -81,7 +88,7 @@ func makeRequest(reqDetails RequestDetails) (*http.Response, error) {
 }
 
 // Función para comparar las respuestas HTTP
-func compareResponses(resp1, resp2 *http.Response) CompareResponse {
+func (c *ComparatorService) compareResponses(resp1, resp2 *http.Response) CompareResponse {
 	differences := CompareResponse{
 		Headers:         make(map[string][]string),
 		BodyDifferences: make(map[string][]interface{}),
@@ -113,14 +120,14 @@ func compareResponses(resp1, resp2 *http.Response) CompareResponse {
 		differences.BodyDifferences["error"] = []interface{}{string(body1), string(body2)}
 	} else {
 		// Comparar los JSON
-		compareJSON(json1, json2, "", differences.BodyDifferences)
+		c.compareJSON(json1, json2, "", differences.BodyDifferences)
 	}
 
 	return differences
 }
 
 // Función para comparar JSONs
-func compareJSON(json1, json2 map[string]interface{}, prefix string, differences map[string][]interface{}) {
+func (c *ComparatorService) compareJSON(json1, json2 map[string]interface{}, prefix string, differences map[string][]interface{}) {
 	for key, val1 := range json1 {
 		fullKey := key
 		if prefix != "" {

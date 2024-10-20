@@ -18,23 +18,23 @@ func NewComparatorService(client *http.Client) *Service {
 	return &Service{client: client}
 }
 
-func (s *Service) CompareRequest(request dtos.Request) dtos.CompareResponse {
+func (s *Service) CompareRequest(request dtos.Request) (dtos.CompareResponse, error) {
 
 	response1, err := s.makeRequest(request.Request1)
 	if err != nil {
 		fmt.Println("Error en la petición 1:", err)
-		return dtos.CompareResponse{}
+		return dtos.CompareResponse{}, fmt.Errorf("error en la petición 1 : %s", err)
 	}
 
 	response2, err := s.makeRequest(request.Request2)
 	if err != nil {
 		fmt.Println("Error en la petición 2:", err)
-		return dtos.CompareResponse{}
+		return dtos.CompareResponse{}, fmt.Errorf("error en la petición 2 : %s", err)
 	}
 
 	differences := s.compareResponses(response1, response2)
 
-	return differences
+	return differences, nil
 }
 
 // Función para realizar la petición HTTP

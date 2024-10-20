@@ -16,7 +16,7 @@ func NewHandler(comparatorService comparatorService) *Handler {
 }
 
 type comparatorService interface {
-	CompareRequest(request dtos.Request) dtos.CompareResponse
+	CompareRequest(request dtos.Request) (diff dtos.CompareResponse, error error)
 }
 
 func (h *Handler) CompareHandler(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +27,11 @@ func (h *Handler) CompareHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	differences := h.service.CompareRequest(req)
+	differences, err := h.service.CompareRequest(req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError) //TODO validar si todo es 500
+		return
+	}
 
 	response := dtos.CompareResponse{
 		StatusCodes:     differences.StatusCodes,

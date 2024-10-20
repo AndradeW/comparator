@@ -3,35 +3,19 @@ package api
 import (
 	"bytes"
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"comparator/internal/comparator/comparator"
-	"comparator/internal/comparator/dtos"
+	"comparator/internal/client"
+	"comparator/internal/comparator"
+	"comparator/internal/dtos"
 	"github.com/stretchr/testify/assert"
 )
 
-type MockHTTPClient struct{}
-
-func NewMockHTTPClient() *MockHTTPClient {
-	return &MockHTTPClient{}
-}
-
-func (m *MockHTTPClient) Do(req *http.Request) (*http.Response, error) {
-	response := `{}`
-
-	return &http.Response{
-		StatusCode: http.StatusOK,
-		Body:       io.NopCloser(bytes.NewReader([]byte(response))),
-		Header:     make(http.Header),
-	}, nil
-}
-
 func TestHandler_CompareHandler(t *testing.T) {
-	client := NewMockHTTPClient()
-	handler := NewHandler(comparator.NewComparatorService(client))
+	clientMock := client.NewMockHTTPClient()
+	handler := NewHandler(comparator.NewComparatorService(clientMock))
 
 	server := httptest.NewServer(http.HandlerFunc(handler.CompareHandler))
 	defer server.Close()

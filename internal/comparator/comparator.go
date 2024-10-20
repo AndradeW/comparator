@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"reflect"
 
-	"comparator/internal/comparator/dtos"
+	"comparator/internal/dtos"
 )
 
 type httpClient interface {

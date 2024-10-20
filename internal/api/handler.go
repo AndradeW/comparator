@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"comparator/internal/comparator/dtos"
+	"comparator/internal/dtos"
 )
 
 type Handler struct {

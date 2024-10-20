@@ -10,11 +10,15 @@ import (
 	"comparator/internal/comparator/dtos"
 )
 
-type Service struct {
-	client *http.Client
+type httpClient interface {
+	Do(req *http.Request) (*http.Response, error)
 }
 
-func NewComparatorService(client *http.Client) *Service {
+type Service struct {
+	client httpClient
+}
+
+func NewComparatorService(client httpClient) *Service {
 	return &Service{client: client}
 }
 

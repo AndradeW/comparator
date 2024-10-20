@@ -7,12 +7,13 @@ import (
 	"comparator/config"
 	"comparator/internal/api"
 	"comparator/internal/comparator"
+	"comparator/internal/httpclient"
 	"comparator/internal/routes"
 )
 
 func main() {
 
-	client := &http.Client{} //TODO create struct
+	client := httpclient.NewHttpclient() //TODO create struct
 	handler := api.NewHandler(comparator.NewComparatorService(client))
 
 	server := http.NewServeMux()

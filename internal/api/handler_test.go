@@ -7,14 +7,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"comparator/internal/client"
 	"comparator/internal/comparator"
 	"comparator/internal/dtos"
+	"comparator/internal/httpclient"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestHandler_CompareHandler(t *testing.T) {
-	clientMock := client.NewMockHTTPClient()
+	clientMock := httpclient.NewMockHTTPClient()
 	handler := NewHandler(comparator.NewComparatorService(clientMock))
 
 	server := httptest.NewServer(http.HandlerFunc(handler.CompareHandler))

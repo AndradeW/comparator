@@ -45,7 +45,7 @@ func (s *Service) CompareRequest(request dtos.Request) (dtos.CompareResponse, er
 func (s *Service) makeRequest(reqDetails dtos.RequestDetails) (*http.Response, error) {
 
 	// Construir la URL con parámetros
-	req, err := http.NewRequest("GET", reqDetails.URL, nil)
+	req, err := http.NewRequest(http.MethodGet, reqDetails.URL, nil)
 	if err != nil {
 		return nil, err
 	}

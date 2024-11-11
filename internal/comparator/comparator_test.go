@@ -55,6 +55,28 @@ func TestService_compareJSON(t *testing.T) {
 			amountDifferencesExpected: 3,
 		},
 		{
+			name: "Ok with Arrays without differences",
+			args: args{
+				json1:       map[string]interface{}{"a": []string{"1", "2", "3"}},
+				json2:       map[string]interface{}{"a": []string{"1", "2", "3"}},
+				prefix:      "",
+				differences: make(map[string][]interface{}),
+			},
+			differencesExpected:       make(map[string][]interface{}),
+			amountDifferencesExpected: 0,
+		},
+		{
+			name: "Ok with Arrays",
+			args: args{
+				json1:       map[string]interface{}{"a": []string{"1", "2", "3"}},
+				json2:       map[string]interface{}{"a": []string{"13", "22", "33"}},
+				prefix:      "",
+				differences: make(map[string][]interface{}),
+			},
+			differencesExpected:       map[string][]interface{}{"a": {[]string{"1", "2", "3"}, []string{"13", "22", "33"}}},
+			amountDifferencesExpected: 1,
+		},
+		{
 			name: "Key not found in second JSON",
 			args: args{
 				json1:       map[string]interface{}{"a": "1"},

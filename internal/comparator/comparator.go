@@ -116,7 +116,25 @@ func (s *Service) compareJSON(json1, json2 map[string]interface{}, prefix string
 		if val2, ok := json2[key]; ok {
 			// Si la clave existe en ambos, comparar los valores
 			if !reflect.DeepEqual(val1, val2) { //TODO Extender a json anidados y arrays
-				differences[fullKey] = []interface{}{val1, val2}
+				switch v1 := val1.(type) {
+				case map[string]interface{}:
+					// Si el valor es un JSON anidado, comparar recursivamente
+					if v2, ok := val2.(map[string]interface{}); ok {
+						s.compareJSON(v1, v2, fullKey, differences)
+					} else {
+						differences[fullKey] = []interface{}{val1, val2}
+					}
+				case []interface{}:
+					// Si el valor es un array, comparar elemento por elemento
+					if v2, ok := val2.([]interface{}); ok {
+						s.compareArray(v1, v2, fullKey, differences)
+					} else {
+						differences[fullKey] = []interface{}{val1, val2}
+					}
+				default:
+					// Otros tipos (números, cadenas, booleanos, etc.)
+					differences[fullKey] = []interface{}{val1, val2}
+				}
 			}
 		} else {
 			// Si la clave solo está en json1
@@ -133,6 +151,37 @@ func (s *Service) compareJSON(json1, json2 map[string]interface{}, prefix string
 
 		if _, ok := json1[key]; !ok {
 			differences[fullKey] = []interface{}{"key not found in first JSON", val2}
+		}
+	}
+}
+
+// Función para comparar arrays
+func (s *Service) compareArray(arr1, arr2 []interface{}, prefix string, differences map[string][]interface{}) {
+	len1 := len(arr1)
+	len2 := len(arr2)
+
+	// Si las longitudes son diferentes, reportar la diferencia
+	if len1 != len2 {
+		differences[prefix] = []interface{}{"different lengths", len1, len2}
+	}
+
+	// Comparar los elementos del array
+	for i := 0; i < len1 && i < len2; i++ {
+		fullKey := fmt.Sprintf("%s[%d]", prefix, i)
+
+		switch v1 := arr1[i].(type) {
+		case map[string]interface{}:
+			// Si el elemento es un objeto JSON, comparar recursivamente
+			if v2, ok := arr2[i].(map[string]interface{}); ok {
+				s.compareJSON(v1, v2, fullKey, differences)
+			} else {
+				differences[fullKey] = []interface{}{arr1[i], arr2[i]}
+			}
+		default:
+			// Comparar otros tipos de elementos
+			if !reflect.DeepEqual(arr1[i], arr2[i]) {
+				differences[fullKey] = []interface{}{arr1[i], arr2[i]}
+			}
 		}
 	}
 }

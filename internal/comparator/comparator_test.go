@@ -57,8 +57,8 @@ func TestService_compareJSON(t *testing.T) {
 		{
 			name: "Ok with Arrays without differences",
 			args: args{
-				json1:       map[string]interface{}{"a": []string{"1", "2", "3"}},
-				json2:       map[string]interface{}{"a": []string{"1", "2", "3"}},
+				json1:       map[string]interface{}{"a": []interface{}{"1", "2", "3"}},
+				json2:       map[string]interface{}{"a": []interface{}{"1", "2", "3"}},
 				prefix:      "",
 				differences: make(map[string][]interface{}),
 			},
@@ -68,12 +68,100 @@ func TestService_compareJSON(t *testing.T) {
 		{
 			name: "Ok with Arrays",
 			args: args{
-				json1:       map[string]interface{}{"a": []string{"1", "2", "3"}},
-				json2:       map[string]interface{}{"a": []string{"13", "22", "33"}},
+				json1:       map[string]interface{}{"a": []interface{}{"1", "2", "3"}},
+				json2:       map[string]interface{}{"a": []interface{}{"13", "22", "33"}},
 				prefix:      "",
 				differences: make(map[string][]interface{}),
 			},
-			differencesExpected:       map[string][]interface{}{"a": {[]string{"1", "2", "3"}, []string{"13", "22", "33"}}},
+			differencesExpected:       map[string][]interface{}{"a[0]": {"1", "13"}, "a[1]": {"2", "22"}, "a[2]": {"3", "33"}},
+			amountDifferencesExpected: 3,
+		},
+		{
+			name: "Ok with Arrays, second without array",
+			args: args{
+				json1:       map[string]interface{}{"a": []interface{}{"1", "2", "3"}},
+				json2:       map[string]interface{}{"a": "13"},
+				prefix:      "",
+				differences: make(map[string][]interface{}),
+			},
+			differencesExpected:       map[string][]interface{}{"a": {[]interface{}{"1", "2", "3"}, "13"}},
+			amountDifferencesExpected: 1,
+		},
+		{
+			name: "Ok with Arrays, length difference",
+			args: args{
+				json1:       map[string]interface{}{"a": []interface{}{"1", "2", "3"}},
+				json2:       map[string]interface{}{"a": []interface{}{}},
+				prefix:      "",
+				differences: make(map[string][]interface{}),
+			},
+			differencesExpected:       map[string][]interface{}{"a": {"different lengths", 3, 0}},
+			amountDifferencesExpected: 1,
+		},
+		{
+			name: "Ok with Arrays of Json",
+			args: args{
+				json1:       map[string]interface{}{"a": []interface{}{map[string]interface{}{"b": "1"}}},
+				json2:       map[string]interface{}{"a": []interface{}{map[string]interface{}{"b": "1"}}},
+				prefix:      "",
+				differences: make(map[string][]interface{}),
+			},
+			differencesExpected:       make(map[string][]interface{}),
+			amountDifferencesExpected: 0,
+		},
+		{
+			name: "Ok with Arrays of Json",
+			args: args{
+				json1:       map[string]interface{}{"a": []interface{}{map[string]interface{}{"b": "1", "c": "2"}}},
+				json2:       map[string]interface{}{"a": []interface{}{map[string]interface{}{"b": "11", "c": "12"}}},
+				prefix:      "",
+				differences: make(map[string][]interface{}),
+			},
+			differencesExpected:       map[string][]interface{}{"a[0].b": {"1", "11"}, "a[0].c": {"2", "12"}},
+			amountDifferencesExpected: 2,
+		},
+		{
+			name: "Ok with Arrays of Json, second without Json",
+			args: args{
+				json1:       map[string]interface{}{"a": []interface{}{map[string]interface{}{"b": "1", "c": "2"}}},
+				json2:       map[string]interface{}{"a": []interface{}{"11"}},
+				prefix:      "",
+				differences: make(map[string][]interface{}),
+			},
+			differencesExpected:       map[string][]interface{}{"a[0]": {map[string]interface{}{"b": "1", "c": "2"}, "11"}},
+			amountDifferencesExpected: 1,
+		},
+		{
+			name: "Ok with Json of Json",
+			args: args{
+				json1:       map[string]interface{}{"a": map[string]interface{}{"b": "1"}},
+				json2:       map[string]interface{}{"a": map[string]interface{}{"b": "1"}},
+				prefix:      "",
+				differences: make(map[string][]interface{}),
+			},
+			differencesExpected:       make(map[string][]interface{}),
+			amountDifferencesExpected: 0,
+		},
+		{
+			name: "Ok with Json of Json",
+			args: args{
+				json1:       map[string]interface{}{"a": map[string]interface{}{"b": "1"}},
+				json2:       map[string]interface{}{"a": map[string]interface{}{"b": "12"}},
+				prefix:      "",
+				differences: make(map[string][]interface{}),
+			},
+			differencesExpected:       map[string][]interface{}{"a.b": {"1", "12"}},
+			amountDifferencesExpected: 1,
+		},
+		{
+			name: "Ok with Json of Json, second without json",
+			args: args{
+				json1:       map[string]interface{}{"a": map[string]interface{}{"b": "1"}},
+				json2:       map[string]interface{}{"a": "12"},
+				prefix:      "",
+				differences: make(map[string][]interface{}),
+			},
+			differencesExpected:       map[string][]interface{}{"a": {map[string]interface{}{"b": "1"}, "12"}},
 			amountDifferencesExpected: 1,
 		},
 		{

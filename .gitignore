@@ -143,3 +143,6 @@ fabric.properties
 # Planes de trabajo (no versionar)
 PLAN_FASES_1_3.md
 PLAN_FASE_4.md
+
+# Config del frontend (contiene la URL de la API; se genera en CI)
+frontend/config.js

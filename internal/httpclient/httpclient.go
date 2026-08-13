@@ -6,19 +6,19 @@ import (
 	"comparator/config"
 )
 
-type Httpclient struct {
+type HTTPClient struct {
 	client http.Client
 }
 
 // TODO revisar
-func NewHttpclient() *Httpclient {
-	return &Httpclient{
+func NewHTTPClient() *HTTPClient {
+	return &HTTPClient{
 		client: http.Client{
 			Timeout: config.GetTimeout(),
 		},
 	}
 }
 
-func (c *Httpclient) Do(req *http.Request) (*http.Response, error) {
+func (c *HTTPClient) Do(req *http.Request) (*http.Response, error) {
 	return c.client.Do(req)
 }

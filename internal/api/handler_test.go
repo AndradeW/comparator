@@ -12,7 +12,6 @@ import (
 
 	"comparator/internal/comparator"
 	"comparator/internal/dtos"
-	"comparator/internal/httpclient"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,8 +23,18 @@ func (f fakeService) CompareRequest(request dtos.Request) (dtos.CompareResponse,
 	return dtos.CompareResponse{}, f.err
 }
 
+type mockClient struct{}
+
+func (mockClient) Do(req *http.Request) (*http.Response, error) {
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(strings.NewReader(`{}`)),
+		Header:     make(http.Header),
+	}, nil
+}
+
 func TestHandler_CompareHandler(t *testing.T) {
-	clientMock := httpclient.NewMockHTTPClient()
+	clientMock := mockClient{}
 	handler := NewHandler(comparator.NewComparatorService(clientMock))
 
 	server := httptest.NewServer(http.HandlerFunc(handler.CompareHandler))
@@ -60,7 +69,7 @@ func TestHandler_CompareHandler(t *testing.T) {
 }
 
 func TestHandler_CompareHandler_bodyDemasiadoGrande(t *testing.T) {
-	clientMock := httpclient.NewMockHTTPClient()
+	clientMock := mockClient{}
 	handler := NewHandler(comparator.NewComparatorService(clientMock))
 
 	server := httptest.NewServer(http.HandlerFunc(handler.CompareHandler))
@@ -78,7 +87,7 @@ func TestHandler_CompareHandler_bodyDemasiadoGrande(t *testing.T) {
 }
 
 func TestHandler_CompareHandler_urlInvalida(t *testing.T) {
-	clientMock := httpclient.NewMockHTTPClient()
+	clientMock := mockClient{}
 	handler := NewHandler(comparator.NewComparatorService(clientMock))
 
 	server := httptest.NewServer(http.HandlerFunc(handler.CompareHandler))

@@ -13,11 +13,11 @@ import (
 
 func main() {
 
-	client := httpclient.NewHttpclient() //TODO create struct
+	client := httpclient.NewHTTPClient() //TODO create struct
 	handler := api.NewHandler(comparator.NewComparatorService(client))
 
 	server := http.NewServeMux()
-	routes.SetUpRoutes(server, handler)
+	routes.SetupRoutes(server, handler)
 
 	log.Println("Listening on " + config.GetPort())
 	log.Fatal(http.ListenAndServe(config.GetPort(), server))

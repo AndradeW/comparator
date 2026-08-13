@@ -85,6 +85,44 @@ func TestService_CompareRequest_errorUpstream(t *testing.T) {
 	assert.ErrorAs(t, err, &upstreamErr)
 }
 
+func TestService_compareResponses_bodyNoJSON(t *testing.T) {
+	resp1 := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{},
+		Body:       io.NopCloser(strings.NewReader(`hola mundo`)),
+	}
+	resp2 := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{},
+		Body:       io.NopCloser(strings.NewReader(`otro texto`)),
+	}
+
+	s := NewComparatorService(nil)
+	diff, err := s.compareResponses(resp1, resp2)
+	assert.NoError(t, err)
+	assert.Contains(t, diff.BodyDifferences, "error")
+}
+
+func TestService_compareResponses_topLevelArray(t *testing.T) {
+	// Un array como cuerpo raíz no se puede unmarshal en map[string]interface{},
+	// por lo que actualmente se reporta bajo la clave "error" (se mejorará en Fase 4).
+	resp1 := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{},
+		Body:       io.NopCloser(strings.NewReader(`[1,2,3]`)),
+	}
+	resp2 := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{},
+		Body:       io.NopCloser(strings.NewReader(`[1,2,4]`)),
+	}
+
+	s := NewComparatorService(nil)
+	diff, err := s.compareResponses(resp1, resp2)
+	assert.NoError(t, err)
+	assert.Contains(t, diff.BodyDifferences, "error")
+}
+
 func TestService_compareResponses_headersSimetricos(t *testing.T) {
 	resp1 := &http.Response{
 		StatusCode: http.StatusOK,

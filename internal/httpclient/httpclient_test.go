@@ -15,7 +15,7 @@ func TestClientTimeout(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := &Httpclient{client: http.Client{Timeout: 100 * time.Millisecond}}
+	client := &HTTPClient{client: http.Client{Timeout: 100 * time.Millisecond}}
 	req, err := http.NewRequest(http.MethodGet, server.URL, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -38,7 +38,7 @@ func TestClientSuccess(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := &Httpclient{client: http.Client{Timeout: time.Second}}
+	client := &HTTPClient{client: http.Client{Timeout: time.Second}}
 	req, err := http.NewRequest(http.MethodGet, server.URL, nil)
 	if err != nil {
 		t.Fatal(err)

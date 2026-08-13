@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"reflect"
 	"strings"
@@ -32,7 +33,7 @@ func (s *Service) CompareRequest(request dtos.Request) (dtos.CompareResponse, er
 		if errors.As(err, &validationErr) {
 			return dtos.CompareResponse{}, err
 		}
-		fmt.Println("Error en la petición 1:", err)
+		slog.Error("error en la petición 1", "error", err)
 		return dtos.CompareResponse{}, &UpstreamError{Message: fmt.Sprintf("error en la petición 1 : %s", err)}
 	}
 
@@ -42,7 +43,7 @@ func (s *Service) CompareRequest(request dtos.Request) (dtos.CompareResponse, er
 		if errors.As(err, &validationErr) {
 			return dtos.CompareResponse{}, err
 		}
-		fmt.Println("Error en la petición 2:", err)
+		slog.Error("error en la petición 2", "error", err)
 		return dtos.CompareResponse{}, &UpstreamError{Message: fmt.Sprintf("error en la petición 2 : %s", err)}
 	}
 

@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"strings"
 
+	"comparator/config"
 	"comparator/internal/dtos"
 )
 
@@ -116,13 +117,13 @@ func (s *Service) compareResponses(resp1, resp2 *http.Response) (dtos.CompareRes
 	}
 
 	// Comparar los cuerpos de la respuesta (asumiendo que son JSON)
-	body1, err := io.ReadAll(resp1.Body)
+	body1, err := s.readBody(resp1.Body, "la respuesta 1")
 	if err != nil {
-		return dtos.CompareResponse{}, &UpstreamError{Message: fmt.Sprintf("error al leer el cuerpo de la respuesta 1: %s", err)}
+		return dtos.CompareResponse{}, err
 	}
-	body2, err := io.ReadAll(resp2.Body)
+	body2, err := s.readBody(resp2.Body, "la respuesta 2")
 	if err != nil {
-		return dtos.CompareResponse{}, &UpstreamError{Message: fmt.Sprintf("error al leer el cuerpo de la respuesta 2: %s", err)}
+		return dtos.CompareResponse{}, err
 	}
 
 	var json1, json2 map[string]interface{}
@@ -138,6 +139,19 @@ func (s *Service) compareResponses(resp1, resp2 *http.Response) (dtos.CompareRes
 	}
 
 	return differences, nil
+}
+
+// readBody lee el cuerpo de una respuesta aplicando el límite MAX_RESPONSE_SIZE.
+func (s *Service) readBody(body io.Reader, label string) ([]byte, error) {
+	max := config.GetMaxResponseSize()
+	data, err := io.ReadAll(io.LimitReader(body, max+1))
+	if err != nil {
+		return nil, &UpstreamError{Message: fmt.Sprintf("error al leer el cuerpo de %s: %s", label, err)}
+	}
+	if int64(len(data)) > max {
+		return nil, &UpstreamError{Message: fmt.Sprintf("el cuerpo de %s excede el tamaño máximo (%d bytes)", label, max)}
+	}
+	return data, nil
 }
 
 // Función para comparar JSONs

@@ -96,3 +96,55 @@ func TestGetPort_env(t *testing.T) {
 		t.Fatalf("GetPort() = %q, se esperaba :9090", got)
 	}
 }
+
+func TestGetMaxResponseSize_default(t *testing.T) {
+	old, ok := os.LookupEnv("MAX_RESPONSE_SIZE")
+	os.Unsetenv("MAX_RESPONSE_SIZE")
+	defer func() {
+		if ok {
+			os.Setenv("MAX_RESPONSE_SIZE", old)
+		}
+	}()
+
+	if got := GetMaxResponseSize(); got != defaultMaxResponseSize {
+		t.Fatalf("GetMaxResponseSize() = %d, se esperaba %d", got, defaultMaxResponseSize)
+	}
+}
+
+func TestGetMaxResponseSize_envValida(t *testing.T) {
+	t.Setenv("MAX_RESPONSE_SIZE", "4096")
+
+	if got := GetMaxResponseSize(); got != 4096 {
+		t.Fatalf("GetMaxResponseSize() = %d, se esperaba 4096", got)
+	}
+}
+
+func TestGetMaxResponseSize_envInvalida(t *testing.T) {
+	t.Setenv("MAX_RESPONSE_SIZE", "no-es-un-numero")
+
+	if got := GetMaxResponseSize(); got != defaultMaxResponseSize {
+		t.Fatalf("GetMaxResponseSize() = %d, se esperaba default %d", got, defaultMaxResponseSize)
+	}
+}
+
+func TestGetCORSAllowedOrigin_sinConfigurar(t *testing.T) {
+	old, ok := os.LookupEnv("CORS_ALLOWED_ORIGIN")
+	os.Unsetenv("CORS_ALLOWED_ORIGIN")
+	defer func() {
+		if ok {
+			os.Setenv("CORS_ALLOWED_ORIGIN", old)
+		}
+	}()
+
+	if got := GetCORSAllowedOrigin(); got != "" {
+		t.Fatalf("GetCORSAllowedOrigin() = %q, se esperaba \"\" (CORS deshabilitado)", got)
+	}
+}
+
+func TestGetCORSAllowedOrigin_env(t *testing.T) {
+	t.Setenv("CORS_ALLOWED_ORIGIN", "https://example.com")
+
+	if got := GetCORSAllowedOrigin(); got != "https://example.com" {
+		t.Fatalf("GetCORSAllowedOrigin() = %q, se esperaba https://example.com", got)
+	}
+}

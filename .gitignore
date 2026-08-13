@@ -139,3 +139,7 @@ fabric.properties
 .idea/**/azureSettings.xml
 
 # End of https://www.toptal.com/developers/gitignore/api/goland,go
+
+# Planes de trabajo (no versionar)
+PLAN_FASES_1_3.md
+PLAN_FASE_4.md

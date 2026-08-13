@@ -123,6 +123,47 @@ func TestService_compareResponses_topLevelArray(t *testing.T) {
 	assert.Contains(t, diff.BodyDifferences, "error")
 }
 
+func TestService_compareResponses_respuestaExcedeLimite(t *testing.T) {
+	t.Setenv("MAX_RESPONSE_SIZE", "10")
+
+	resp1 := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{},
+		Body:       io.NopCloser(strings.NewReader(`{"valor": "12345678901234567890"}`)),
+	}
+	resp2 := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{},
+		Body:       io.NopCloser(strings.NewReader(`{}`)),
+	}
+
+	s := NewComparatorService(nil)
+	_, err := s.compareResponses(resp1, resp2)
+
+	var upstreamErr *UpstreamError
+	assert.ErrorAs(t, err, &upstreamErr)
+	assert.Contains(t, upstreamErr.Message, "excede el tamaño máximo")
+}
+
+func TestService_compareResponses_respuestaDentroDelLimite(t *testing.T) {
+	t.Setenv("MAX_RESPONSE_SIZE", "10")
+
+	resp1 := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{},
+		Body:       io.NopCloser(strings.NewReader(`{"a": 1}`)),
+	}
+	resp2 := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{},
+		Body:       io.NopCloser(strings.NewReader(`{"a": 1}`)),
+	}
+
+	s := NewComparatorService(nil)
+	_, err := s.compareResponses(resp1, resp2)
+	assert.NoError(t, err)
+}
+
 func TestService_compareResponses_headersSimetricos(t *testing.T) {
 	resp1 := &http.Response{
 		StatusCode: http.StatusOK,

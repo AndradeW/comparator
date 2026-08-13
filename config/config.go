@@ -9,8 +9,9 @@ import (
 const PORT = "8080"
 
 const (
-	defaultTimeout    = 10 * time.Second
-	defaultMaxBodySize = int64(1 << 20) // 1 MiB
+	defaultTimeout         = 10 * time.Second
+	defaultMaxBodySize     = int64(1 << 20)     // 1 MiB
+	defaultMaxResponseSize = int64(10 << 20)    // 10 MiB
 )
 
 func GetPort() string {
@@ -51,4 +52,26 @@ func GetMaxBodySize() int64 {
 	}
 
 	return size
+}
+
+// GetMaxResponseSize devuelve el límite en bytes del cuerpo de la respuesta upstream.
+// Se configura con la env MAX_RESPONSE_SIZE (en bytes).
+func GetMaxResponseSize() int64 {
+	envSize := os.Getenv("MAX_RESPONSE_SIZE")
+	if envSize == "" {
+		return defaultMaxResponseSize
+	}
+
+	size, err := strconv.ParseInt(envSize, 10, 64)
+	if err != nil || size <= 0 {
+		return defaultMaxResponseSize
+	}
+
+	return size
+}
+
+// GetCORSAllowedOrigin devuelve el origin permitido para CORS.
+// Se configura con la env CORS_ALLOWED_ORIGIN; si no está seteada, CORS queda deshabilitado.
+func GetCORSAllowedOrigin() string {
+	return os.Getenv("CORS_ALLOWED_ORIGIN")
 }

@@ -1,10 +1,46 @@
 package comparator
 
 import (
+	"io"
+	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+type trackingBody struct {
+	io.ReadCloser
+	closed bool
+}
+
+func (tb *trackingBody) Close() error {
+	tb.closed = true
+	return tb.ReadCloser.Close()
+}
+
+func TestService_compareResponses_cierraBodies(t *testing.T) {
+	body1 := &trackingBody{ReadCloser: io.NopCloser(strings.NewReader(`{"a": 1}`))}
+	body2 := &trackingBody{ReadCloser: io.NopCloser(strings.NewReader(`{"a": 1}`))}
+
+	resp1 := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": {"application/json"}},
+		Body:       body1,
+	}
+	resp2 := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": {"application/json"}},
+		Body:       body2,
+	}
+
+	s := NewComparatorService(nil)
+	_ = s.compareResponses(resp1, resp2)
+
+	if !body1.closed || !body2.closed {
+		t.Fatal("los bodies deberían cerrarse al finalizar la comparación")
+	}
+}
 
 func TestService_compareJSON(t *testing.T) {
 

@@ -1,6 +1,10 @@
 package httpclient
 
-import "net/http"
+import (
+	"net/http"
+
+	"comparator/config"
+)
 
 type Httpclient struct {
 	client http.Client
@@ -9,7 +13,9 @@ type Httpclient struct {
 // TODO revisar
 func NewHttpclient() *Httpclient {
 	return &Httpclient{
-		client: http.Client{},
+		client: http.Client{
+			Timeout: config.GetTimeout(),
+		},
 	}
 }
 

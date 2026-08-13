@@ -27,13 +27,13 @@ func (s *Service) CompareRequest(request dtos.Request) (dtos.CompareResponse, er
 	response1, err := s.makeRequest(request.Request1)
 	if err != nil {
 		fmt.Println("Error en la petición 1:", err)
-		return dtos.CompareResponse{}, fmt.Errorf("error en la petición 1 : %s", err)
+		return dtos.CompareResponse{}, fmt.Errorf("error en la petición 1 : %w", err)
 	}
 
 	response2, err := s.makeRequest(request.Request2)
 	if err != nil {
 		fmt.Println("Error en la petición 2:", err)
-		return dtos.CompareResponse{}, fmt.Errorf("error en la petición 2 : %s", err)
+		return dtos.CompareResponse{}, fmt.Errorf("error en la petición 2 : %w", err)
 	}
 
 	differences := s.compareResponses(response1, response2)
@@ -43,6 +43,9 @@ func (s *Service) CompareRequest(request dtos.Request) (dtos.CompareResponse, er
 
 // Función para realizar la petición HTTP
 func (s *Service) makeRequest(reqDetails dtos.RequestDetails) (*http.Response, error) {
+	if err := validateURL(reqDetails.URL); err != nil {
+		return nil, err
+	}
 
 	// Construir la URL con parámetros
 	req, err := http.NewRequest(http.MethodGet, reqDetails.URL, nil)
@@ -68,6 +71,9 @@ func (s *Service) makeRequest(reqDetails dtos.RequestDetails) (*http.Response, e
 
 // Función para comparar las respuestas HTTP
 func (s *Service) compareResponses(resp1, resp2 *http.Response) dtos.CompareResponse {
+	defer resp1.Body.Close()
+	defer resp2.Body.Close()
+
 	differences := dtos.CompareResponse{
 		Headers:         make(map[string][]string),
 		BodyDifferences: make(map[string][]interface{}),

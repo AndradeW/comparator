@@ -2,10 +2,13 @@ package comparator
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"reflect"
+	"strings"
 
 	"comparator/internal/dtos"
 )
@@ -26,23 +29,37 @@ func (s *Service) CompareRequest(request dtos.Request) (dtos.CompareResponse, er
 
 	response1, err := s.makeRequest(request.Request1)
 	if err != nil {
-		fmt.Println("Error en la petición 1:", err)
-		return dtos.CompareResponse{}, fmt.Errorf("error en la petición 1 : %s", err)
+		var validationErr *ValidationError
+		if errors.As(err, &validationErr) {
+			return dtos.CompareResponse{}, err
+		}
+		slog.Error("error en la petición 1", "error", err)
+		return dtos.CompareResponse{}, &UpstreamError{Message: fmt.Sprintf("error en la petición 1 : %s", err)}
 	}
 
 	response2, err := s.makeRequest(request.Request2)
 	if err != nil {
-		fmt.Println("Error en la petición 2:", err)
-		return dtos.CompareResponse{}, fmt.Errorf("error en la petición 2 : %s", err)
+		var validationErr *ValidationError
+		if errors.As(err, &validationErr) {
+			return dtos.CompareResponse{}, err
+		}
+		slog.Error("error en la petición 2", "error", err)
+		return dtos.CompareResponse{}, &UpstreamError{Message: fmt.Sprintf("error en la petición 2 : %s", err)}
 	}
 
-	differences := s.compareResponses(response1, response2)
+	differences, err := s.compareResponses(response1, response2)
+	if err != nil {
+		return dtos.CompareResponse{}, err
+	}
 
 	return differences, nil
 }
 
 // Función para realizar la petición HTTP
 func (s *Service) makeRequest(reqDetails dtos.RequestDetails) (*http.Response, error) {
+	if err := validateURL(reqDetails.URL); err != nil {
+		return nil, err
+	}
 
 	// Construir la URL con parámetros
 	req, err := http.NewRequest(http.MethodGet, reqDetails.URL, nil)
@@ -67,7 +84,10 @@ func (s *Service) makeRequest(reqDetails dtos.RequestDetails) (*http.Response, e
 }
 
 // Función para comparar las respuestas HTTP
-func (s *Service) compareResponses(resp1, resp2 *http.Response) dtos.CompareResponse {
+func (s *Service) compareResponses(resp1, resp2 *http.Response) (dtos.CompareResponse, error) {
+	defer resp1.Body.Close()
+	defer resp2.Body.Close()
+
 	differences := dtos.CompareResponse{
 		Headers:         make(map[string][]string),
 		BodyDifferences: make(map[string][]interface{}),
@@ -78,17 +98,32 @@ func (s *Service) compareResponses(resp1, resp2 *http.Response) dtos.CompareResp
 		differences.StatusCodes = []int{resp1.StatusCode, resp2.StatusCode}
 	}
 
-	// Comparar los headers
-	for key, val1 := range resp1.Header {
-		val2 := resp2.Header.Get(key)
-		if !reflect.DeepEqual(val1, []string{val2}) {
-			differences.Headers[key] = []string{val1[0], val2}
+	// Comparar los headers (unión de keys de ambas respuestas, preservando multi-valores)
+	headerKeys := make(map[string]struct{})
+	for key := range resp1.Header {
+		headerKeys[key] = struct{}{}
+	}
+	for key := range resp2.Header {
+		headerKeys[key] = struct{}{}
+	}
+
+	for key := range headerKeys {
+		val1 := resp1.Header.Values(key)
+		val2 := resp2.Header.Values(key)
+		if !reflect.DeepEqual(val1, val2) {
+			differences.Headers[key] = []string{strings.Join(val1, ", "), strings.Join(val2, ", ")}
 		}
 	}
 
 	// Comparar los cuerpos de la respuesta (asumiendo que son JSON)
-	body1, _ := io.ReadAll(resp1.Body)
-	body2, _ := io.ReadAll(resp2.Body)
+	body1, err := io.ReadAll(resp1.Body)
+	if err != nil {
+		return dtos.CompareResponse{}, &UpstreamError{Message: fmt.Sprintf("error al leer el cuerpo de la respuesta 1: %s", err)}
+	}
+	body2, err := io.ReadAll(resp2.Body)
+	if err != nil {
+		return dtos.CompareResponse{}, &UpstreamError{Message: fmt.Sprintf("error al leer el cuerpo de la respuesta 2: %s", err)}
+	}
 
 	var json1, json2 map[string]interface{}
 	err1 := json.Unmarshal(body1, &json1)
@@ -102,7 +137,7 @@ func (s *Service) compareResponses(resp1, resp2 *http.Response) dtos.CompareResp
 		s.compareJSON(json1, json2, "", differences.BodyDifferences)
 	}
 
-	return differences
+	return differences, nil
 }
 
 // Función para comparar JSONs

@@ -2,8 +2,12 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
+	"log/slog"
 	"net/http"
 
+	"comparator/config"
+	"comparator/internal/comparator"
 	"comparator/internal/dtos"
 )
 
@@ -20,16 +24,36 @@ type comparatorService interface {
 }
 
 func (h *Handler) CompareHandler(w http.ResponseWriter, r *http.Request) {
+	r.Body = http.MaxBytesReader(w, r.Body, config.GetMaxBodySize())
 
 	var req dtos.Request
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	differences, err := h.service.CompareRequest(req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError) //TODO validar si todo es 500
+		var validationErr *comparator.ValidationError
+		if errors.As(err, &validationErr) {
+			http.Error(w, validationErr.Error(), http.StatusBadRequest)
+			return
+		}
+
+		var upstreamErr *comparator.UpstreamError
+		if errors.As(err, &upstreamErr) {
+			slog.Warn("error del servidor destino", "error", err)
+			http.Error(w, "upstream error", http.StatusBadGateway)
+			return
+		}
+
+		slog.Error("error al comparar las peticiones", "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
 

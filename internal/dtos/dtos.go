@@ -8,7 +8,7 @@ type Request struct {
 
 // Estructura para capturar input del usuario
 type RequestDetails struct {
-	URL     string            `json:"url" validate:"required"` //TODO rev
+	URL     string            `json:"url"`
 	Headers map[string]string `json:"headers"`
 	Params  map[string]string `json:"params"`
 }

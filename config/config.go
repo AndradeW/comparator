@@ -14,10 +14,11 @@ const (
 )
 
 func GetPort() string {
-	if port := os.Getenv("PORT"); port == "" {
+	port := os.Getenv("PORT")
+	if port == "" {
 		port = PORT
 	}
-	return ":" + PORT
+	return ":" + port
 }
 
 // GetTimeout devuelve el timeout del cliente HTTP.

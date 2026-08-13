@@ -74,3 +74,25 @@ func TestGetMaxBodySize_envCero(t *testing.T) {
 		t.Fatalf("GetMaxBodySize() = %d, se esperaba default %d", got, defaultMaxBodySize)
 	}
 }
+
+func TestGetPort_default(t *testing.T) {
+	old, ok := os.LookupEnv("PORT")
+	os.Unsetenv("PORT")
+	defer func() {
+		if ok {
+			os.Setenv("PORT", old)
+		}
+	}()
+
+	if got := GetPort(); got != ":"+PORT {
+		t.Fatalf("GetPort() = %q, se esperaba %q", got, ":"+PORT)
+	}
+}
+
+func TestGetPort_env(t *testing.T) {
+	t.Setenv("PORT", "9090")
+
+	if got := GetPort(); got != ":9090" {
+		t.Fatalf("GetPort() = %q, se esperaba :9090", got)
+	}
+}

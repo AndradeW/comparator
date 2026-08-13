@@ -1,11 +1,13 @@
 package comparator
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"strings"
 	"testing"
 
+	"comparator/internal/dtos"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,6 +19,17 @@ type trackingBody struct {
 func (tb *trackingBody) Close() error {
 	tb.closed = true
 	return tb.ReadCloser.Close()
+}
+
+type errorBody struct{}
+
+func (errorBody) Read(p []byte) (int, error) { return 0, errors.New("lectura falló") }
+func (errorBody) Close() error               { return nil }
+
+type failingClient struct{}
+
+func (failingClient) Do(req *http.Request) (*http.Response, error) {
+	return nil, errors.New("connection refused")
 }
 
 func TestService_compareResponses_cierraBodies(t *testing.T) {
@@ -35,11 +48,95 @@ func TestService_compareResponses_cierraBodies(t *testing.T) {
 	}
 
 	s := NewComparatorService(nil)
-	_ = s.compareResponses(resp1, resp2)
+	_, _ = s.compareResponses(resp1, resp2)
 
 	if !body1.closed || !body2.closed {
 		t.Fatal("los bodies deberían cerrarse al finalizar la comparación")
 	}
+}
+
+func TestService_compareResponses_errorLectura(t *testing.T) {
+	resp1 := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{},
+		Body:       errorBody{},
+	}
+	resp2 := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{},
+		Body:       io.NopCloser(strings.NewReader(`{}`)),
+	}
+
+	s := NewComparatorService(nil)
+	_, err := s.compareResponses(resp1, resp2)
+	assert.Error(t, err)
+}
+
+func TestService_CompareRequest_errorUpstream(t *testing.T) {
+	s := NewComparatorService(failingClient{})
+	req := dtos.Request{
+		Request1: dtos.RequestDetails{URL: "https://8.8.8.8/"},
+		Request2: dtos.RequestDetails{URL: "https://8.8.8.8/"},
+	}
+
+	_, err := s.CompareRequest(req)
+
+	var upstreamErr *UpstreamError
+	assert.ErrorAs(t, err, &upstreamErr)
+}
+
+func TestService_compareResponses_headersSimetricos(t *testing.T) {
+	resp1 := &http.Response{
+		StatusCode: http.StatusOK,
+		Header: http.Header{
+			"Content-Type": {"application/json"},
+			"X-Solo-1":     {"a"},
+			"X-Multi":      {"1", "2"},
+		},
+		Body: io.NopCloser(strings.NewReader(`{}`)),
+	}
+	resp2 := &http.Response{
+		StatusCode: http.StatusOK,
+		Header: http.Header{
+			"Content-Type": {"application/json"},
+			"X-Solo-2":     {"b"},
+			"X-Multi":      {"1", "3"},
+		},
+		Body: io.NopCloser(strings.NewReader(`{}`)),
+	}
+
+	s := NewComparatorService(nil)
+	diff, _ := s.compareResponses(resp1, resp2)
+
+	// Header idéntico no debe aparecer
+	assert.NotContains(t, diff.Headers, "Content-Type")
+
+	// Header solo en resp1
+	assert.Equal(t, []string{"a", ""}, diff.Headers["X-Solo-1"])
+
+	// Header solo en resp2
+	assert.Equal(t, []string{"", "b"}, diff.Headers["X-Solo-2"])
+
+	// Multi-valores comparados de forma completa
+	assert.Equal(t, []string{"1, 2", "1, 3"}, diff.Headers["X-Multi"])
+}
+
+func TestService_compareResponses_headersIdenticos(t *testing.T) {
+	resp1 := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": {"application/json"}},
+		Body:       io.NopCloser(strings.NewReader(`{}`)),
+	}
+	resp2 := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": {"application/json"}},
+		Body:       io.NopCloser(strings.NewReader(`{}`)),
+	}
+
+	s := NewComparatorService(nil)
+	diff, _ := s.compareResponses(resp1, resp2)
+
+	assert.Empty(t, diff.Headers)
 }
 
 func TestService_compareJSON(t *testing.T) {

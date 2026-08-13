@@ -44,8 +44,16 @@ func (h *Handler) CompareHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, validationErr.Error(), http.StatusBadRequest)
 			return
 		}
+
+		var upstreamErr *comparator.UpstreamError
+		if errors.As(err, &upstreamErr) {
+			slog.Warn("error del servidor destino", "error", err)
+			http.Error(w, "upstream error", http.StatusBadGateway)
+			return
+		}
+
 		slog.Error("error al comparar las peticiones", "error", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError) //TODO distinguir errores upstream (502)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
 

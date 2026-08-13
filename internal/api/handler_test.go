@@ -118,3 +118,21 @@ func TestHandler_CompareHandler_errorInterno_noExponeDetalles(t *testing.T) {
 	assert.NotContains(t, string(respBody), "secreto interno")
 	assert.Contains(t, string(respBody), "internal server error")
 }
+
+func TestHandler_CompareHandler_errorUpstream(t *testing.T) {
+	handler := NewHandler(fakeService{err: &comparator.UpstreamError{Message: "connection refused"}})
+
+	server := httptest.NewServer(http.HandlerFunc(handler.CompareHandler))
+	defer server.Close()
+
+	body := `{
+		"request1": {"url": "https://example.com"},
+		"request2": {"url": "https://example.com"}
+	}`
+
+	resp, err := http.Post(server.URL+"/compare", "application/json", bytes.NewBufferString(body))
+	assert.NoError(t, err)
+	defer resp.Body.Close()
+
+	assert.Equal(t, http.StatusBadGateway, resp.StatusCode)
+}

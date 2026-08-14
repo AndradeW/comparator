@@ -369,11 +369,20 @@ body {
   white-space: pre;
 }
 
-.tok-str,
-.tok-num,
-.tok-bool,
+.tok-str {
+  color: var(--verde);
+}
+
+.tok-num {
+  color: #A05A0C;
+}
+
+.tok-bool {
+  color: var(--azul-b);
+}
+
 .tok-key {
-  color: var(--tinta);
+  color: #7A3E9D;
 }
 
 .tok-punc {

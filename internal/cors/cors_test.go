@@ -92,10 +92,10 @@ func TestRequestNormal_originNoPermitido(t *testing.T) {
 func TestCORSDeshabilitado(t *testing.T) {
 	// Sin env CORS_ALLOWED_ORIGIN → CORS deshabilitado
 	old, ok := os.LookupEnv("CORS_ALLOWED_ORIGIN")
-	os.Unsetenv("CORS_ALLOWED_ORIGIN")
+	_ = os.Unsetenv("CORS_ALLOWED_ORIGIN")
 	defer func() {
 		if ok {
-			os.Setenv("CORS_ALLOWED_ORIGIN", old)
+			_ = os.Setenv("CORS_ALLOWED_ORIGIN", old)
 		}
 	}()
 

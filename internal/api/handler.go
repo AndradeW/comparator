@@ -65,5 +65,7 @@ func (h *Handler) CompareHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		slog.Error("error al codificar la respuesta", "request_id", requestlog.FromContext(r.Context()), "error", err)
+	}
 }

@@ -106,8 +106,8 @@ func (s *Service) makeRequest(reqDetails dtos.RequestDetails) (*http.Response, e
 
 // Función para comparar las respuestas HTTP
 func (s *Service) compareResponses(resp1, resp2 *http.Response) (dtos.CompareResponse, error) {
-	defer resp1.Body.Close()
-	defer resp2.Body.Close()
+	defer func() { _ = resp1.Body.Close() }()
+	defer func() { _ = resp2.Body.Close() }()
 
 	differences := dtos.CompareResponse{
 		Headers:         make(map[string][]string),

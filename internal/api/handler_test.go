@@ -51,7 +51,7 @@ func TestHandler_CompareHandler(t *testing.T) {
 
 	resp, err := http.Post(server.URL+"/compare", "application/json", bytes.NewBuffer([]byte(body)))
 	assert.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -62,7 +62,7 @@ func TestHandler_CompareHandler(t *testing.T) {
 	expectedResponse := dtos.CompareResponse{
 		StatusCodes:     nil,
 		Headers:         make(map[string][]string),
-		BodyDifferences: make(map[string][]interface{}),
+		BodyDifferences: []dtos.BodyDifference{},
 	}
 
 	assert.Equal(t, expectedResponse, response)
@@ -81,7 +81,7 @@ func TestHandler_CompareHandler_bodyDemasiadoGrande(t *testing.T) {
 
 	resp, err := http.Post(server.URL+"/compare", "application/json", bytes.NewBufferString(body))
 	assert.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusRequestEntityTooLarge, resp.StatusCode)
 }
@@ -100,7 +100,7 @@ func TestHandler_CompareHandler_urlInvalida(t *testing.T) {
 
 	resp, err := http.Post(server.URL+"/compare", "application/json", bytes.NewBufferString(body))
 	assert.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
@@ -118,7 +118,7 @@ func TestHandler_CompareHandler_errorInterno_noExponeDetalles(t *testing.T) {
 
 	resp, err := http.Post(server.URL+"/compare", "application/json", bytes.NewBufferString(body))
 	assert.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
 
@@ -141,7 +141,7 @@ func TestHandler_CompareHandler_errorUpstream(t *testing.T) {
 
 	resp, err := http.Post(server.URL+"/compare", "application/json", bytes.NewBufferString(body))
 	assert.NoError(t, err)
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	assert.Equal(t, http.StatusBadGateway, resp.StatusCode)
 }

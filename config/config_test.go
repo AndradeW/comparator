@@ -9,10 +9,10 @@ import (
 func TestGetTimeout_default(t *testing.T) {
 	// Asegurar que la env no está seteada
 	old, ok := os.LookupEnv("HTTP_TIMEOUT")
-	os.Unsetenv("HTTP_TIMEOUT")
+	_ = os.Unsetenv("HTTP_TIMEOUT")
 	defer func() {
 		if ok {
-			os.Setenv("HTTP_TIMEOUT", old)
+			_ = os.Setenv("HTTP_TIMEOUT", old)
 		}
 	}()
 
@@ -39,10 +39,10 @@ func TestGetTimeout_envInvalida(t *testing.T) {
 
 func TestGetMaxBodySize_default(t *testing.T) {
 	old, ok := os.LookupEnv("MAX_BODY_SIZE")
-	os.Unsetenv("MAX_BODY_SIZE")
+	_ = os.Unsetenv("MAX_BODY_SIZE")
 	defer func() {
 		if ok {
-			os.Setenv("MAX_BODY_SIZE", old)
+			_ = os.Setenv("MAX_BODY_SIZE", old)
 		}
 	}()
 
@@ -77,10 +77,10 @@ func TestGetMaxBodySize_envCero(t *testing.T) {
 
 func TestGetPort_default(t *testing.T) {
 	old, ok := os.LookupEnv("PORT")
-	os.Unsetenv("PORT")
+	_ = os.Unsetenv("PORT")
 	defer func() {
 		if ok {
-			os.Setenv("PORT", old)
+			_ = os.Setenv("PORT", old)
 		}
 	}()
 
@@ -99,10 +99,10 @@ func TestGetPort_env(t *testing.T) {
 
 func TestGetMaxResponseSize_default(t *testing.T) {
 	old, ok := os.LookupEnv("MAX_RESPONSE_SIZE")
-	os.Unsetenv("MAX_RESPONSE_SIZE")
+	_ = os.Unsetenv("MAX_RESPONSE_SIZE")
 	defer func() {
 		if ok {
-			os.Setenv("MAX_RESPONSE_SIZE", old)
+			_ = os.Setenv("MAX_RESPONSE_SIZE", old)
 		}
 	}()
 
@@ -129,10 +129,10 @@ func TestGetMaxResponseSize_envInvalida(t *testing.T) {
 
 func TestGetCORSAllowedOrigin_sinConfigurar(t *testing.T) {
 	old, ok := os.LookupEnv("CORS_ALLOWED_ORIGIN")
-	os.Unsetenv("CORS_ALLOWED_ORIGIN")
+	_ = os.Unsetenv("CORS_ALLOWED_ORIGIN")
 	defer func() {
 		if ok {
-			os.Setenv("CORS_ALLOWED_ORIGIN", old)
+			_ = os.Setenv("CORS_ALLOWED_ORIGIN", old)
 		}
 	}()
 

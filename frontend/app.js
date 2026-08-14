@@ -8,11 +8,18 @@
     verdict: document.getElementById("verdict"),
     ledger: document.getElementById("ledger"),
     results: document.getElementById("results"),
-    error: document.getElementById("error")
+    error: document.getElementById("error"),
+    volatileToggle: document.getElementById("volatile-headers")
   };
 
   var SENTINEL_A_MISSING = "key not found in first JSON";
   var SENTINEL_B_MISSING = "key not found in second JSON";
+
+  var VOLATILE_HEADERS = ["date", "age", "cf-ray", "set-cookie", "via", "expires", "x-cache", "x-cache-hits", "x-served-by", "x-request-id"];
+
+  function isVolatileHeader(key) {
+    return VOLATILE_HEADERS.indexOf(key.toLowerCase()) !== -1;
+  }
 
   function readJson(value, name) {
     if (!value || !value.trim()) {
@@ -34,10 +41,14 @@
     if (!url) {
       throw new Error("Falta la URL del Request " + (id === 1 ? "A" : "B"));
     }
+    var method = document.getElementById("method" + id).value;
+    var body = document.getElementById("body" + id).value;
     return {
       url: url,
+      method: method,
       headers: readJson(document.getElementById("headers" + id).value, "Headers " + (id === 1 ? "A" : "B")),
-      params: readJson(document.getElementById("params" + id).value, "Parámetros " + (id === 1 ? "A" : "B"))
+      params: readJson(document.getElementById("params" + id).value, "Parámetros " + (id === 1 ? "A" : "B")),
+      body: body
     };
   }
 
@@ -186,15 +197,22 @@
     els.verdict.appendChild(stamp);
   }
 
+  var lastData = null;
+
   function renderLedger(data) {
     var statusCodes = data.status_codes || [];
     var headers = data.headers || {};
-    var body = data.body_differences || {};
+    var body = data.body_differences || [];
 
-    var headerKeys = Object.keys(headers);
-    var bodyKeys = Object.keys(body);
+    var showVolatile = !els.volatileToggle.checked;
+    var headerKeys = Object.keys(headers).filter(function (key) {
+      return showVolatile || !isVolatileHeader(key);
+    });
+    var hiddenVolatile = headerKeys.length !== Object.keys(headers).length;
+
+    var bodyCount = body.length;
     var statusDiff = statusCodes.length === 2;
-    var total = (statusDiff ? 1 : 0) + headerKeys.length + bodyKeys.length;
+    var total = (statusDiff ? 1 : 0) + headerKeys.length + bodyCount;
 
     renderVerdict(total);
 
@@ -219,16 +237,19 @@
         var vals = headers[key];
         gHeaders.appendChild(diffRow(key, vals[0], vals[1]));
       });
+      if (hiddenVolatile) {
+        gHeaders.appendChild(el("p", "ledger-note", "Headers volátiles ocultos (Date, Age, Cf-Ray, …)"));
+      }
       root.appendChild(gHeaders);
     }
 
-    if (bodyKeys.length > 0) {
+    if (body.length > 0) {
       var gBody = group("Body");
-      bodyKeys.forEach(function (key) {
-        if (key === "error") {
-          gBody.appendChild(rawBodyRow(body[key]));
+      body.forEach(function (item) {
+        if (item.tipo === "error") {
+          gBody.appendChild(rawBodyRow(item.values));
         } else {
-          gBody.appendChild(bodyDiffRow(key, body[key]));
+          gBody.appendChild(bodyDiffRow(item.path, item.values));
         }
       });
       root.appendChild(gBody);
@@ -318,6 +339,7 @@
       }
 
       var data = await resp.json();
+      lastData = data;
       renderLedger(data);
       els.results.hidden = false;
     } catch (e) {
@@ -325,6 +347,12 @@
     } finally {
       els.compareBtn.disabled = false;
       els.compareBtn.textContent = "Comparar";
+    }
+  });
+
+  els.volatileToggle.addEventListener("change", function () {
+    if (lastData) {
+      renderLedger(lastData);
     }
   });
 })();

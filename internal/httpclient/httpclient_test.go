@@ -48,7 +48,7 @@ func TestClientSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("StatusCode = %d, se esperaba 200", resp.StatusCode)

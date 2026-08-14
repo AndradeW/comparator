@@ -223,7 +223,7 @@
     }
 
     if (bodyKeys.length > 0) {
-      var gBody = group("Cuerpo");
+      var gBody = group("Body");
       bodyKeys.forEach(function (key) {
         if (key === "error") {
           gBody.appendChild(rawBodyRow(body[key]));
@@ -235,7 +235,7 @@
     }
 
     if (total === 0) {
-      root.appendChild(el("p", "ledger-note", "No hay diferencias: status, headers y cuerpo coinciden."));
+      root.appendChild(el("p", "ledger-note", "No hay diferencias: status, headers y body coinciden."));
     }
   }
 

@@ -15,9 +15,17 @@ type RequestDetails struct {
 	Body    string            `json:"body"`
 }
 
+// BodyDifference representa una diferencia puntual en el cuerpo JSON:
+// la ruta donde ocurre (path), el tipo de los valores (tipo) y ambos valores.
+type BodyDifference struct {
+	Path   string        `json:"path"`
+	Tipo   string        `json:"tipo"`
+	Values []interface{} `json:"values"`
+}
+
 // Estructura para almacenar las diferencias
 type CompareResponse struct {
-	StatusCodes     []int                    `json:"status_codes"`
-	Headers         map[string][]string      `json:"headers"`
-	BodyDifferences map[string][]interface{} `json:"body_differences"`
+	StatusCodes     []int             `json:"status_codes"`
+	Headers         map[string][]string `json:"headers"`
+	BodyDifferences []BodyDifference  `json:"body_differences"`
 }

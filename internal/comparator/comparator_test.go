@@ -150,12 +150,12 @@ func TestService_compareResponses_bodyNoJSON(t *testing.T) {
 	s := NewComparatorService(nil)
 	diff, err := s.compareResponses(resp1, resp2)
 	assert.NoError(t, err)
-	assert.Contains(t, diff.BodyDifferences, "error")
+	assert.Len(t, diff.BodyDifferences, 1)
+	assert.Equal(t, "error", diff.BodyDifferences[0].Tipo)
 }
 
 func TestService_compareResponses_topLevelArray(t *testing.T) {
-	// Un array como cuerpo raíz no se puede unmarshal en map[string]interface{},
-	// por lo que actualmente se reporta bajo la clave "error" (se mejorará en Fase 4).
+	// Un array como cuerpo raíz se compara elemento por elemento.
 	resp1 := &http.Response{
 		StatusCode: http.StatusOK,
 		Header:     http.Header{},
@@ -170,7 +170,47 @@ func TestService_compareResponses_topLevelArray(t *testing.T) {
 	s := NewComparatorService(nil)
 	diff, err := s.compareResponses(resp1, resp2)
 	assert.NoError(t, err)
-	assert.Contains(t, diff.BodyDifferences, "error")
+	assert.Equal(t, []dtos.BodyDifference{
+		{Path: "[2]", Tipo: "number", Values: []interface{}{3.0, 4.0}},
+	}, diff.BodyDifferences)
+}
+
+func TestService_compareResponses_topLevelScalar(t *testing.T) {
+	resp1 := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{},
+		Body:       io.NopCloser(strings.NewReader(`"hola"`)),
+	}
+	resp2 := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{},
+		Body:       io.NopCloser(strings.NewReader(`"chau"`)),
+	}
+
+	s := NewComparatorService(nil)
+	diff, err := s.compareResponses(resp1, resp2)
+	assert.NoError(t, err)
+	assert.Equal(t, []dtos.BodyDifference{
+		{Path: "", Tipo: "string", Values: []interface{}{"hola", "chau"}},
+	}, diff.BodyDifferences)
+}
+
+func TestService_compareResponses_topLevelScalarIgual(t *testing.T) {
+	resp1 := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{},
+		Body:       io.NopCloser(strings.NewReader(`"hola"`)),
+	}
+	resp2 := &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{},
+		Body:       io.NopCloser(strings.NewReader(`"hola"`)),
+	}
+
+	s := NewComparatorService(nil)
+	diff, err := s.compareResponses(resp1, resp2)
+	assert.NoError(t, err)
+	assert.Empty(t, diff.BodyDifferences)
 }
 
 func TestService_compareResponses_respuestaExcedeLimite(t *testing.T) {
@@ -274,13 +314,13 @@ func TestService_compareJSON(t *testing.T) {
 		json1       map[string]interface{}
 		json2       map[string]interface{}
 		prefix      string
-		differences map[string][]interface{}
+		differences []dtos.BodyDifference
 	}
 
 	tests := []struct {
 		name                      string
 		args                      args
-		differencesExpected       map[string][]interface{}
+		differencesExpected       []dtos.BodyDifference
 		amountDifferencesExpected int
 	}{
 		{
@@ -289,9 +329,11 @@ func TestService_compareJSON(t *testing.T) {
 				json1:       map[string]interface{}{"a": "1"},
 				json2:       map[string]interface{}{"a": "2"},
 				prefix:      "test",
-				differences: make(map[string][]interface{}),
+				differences: make([]dtos.BodyDifference, 0),
 			},
-			differencesExpected:       map[string][]interface{}{"test.a": {"1", "2"}},
+			differencesExpected: []dtos.BodyDifference{
+				{Path: "test.a", Tipo: "string", Values: []interface{}{"1", "2"}},
+			},
 			amountDifferencesExpected: 1,
 		},
 		{
@@ -300,9 +342,11 @@ func TestService_compareJSON(t *testing.T) {
 				json1:       map[string]interface{}{"a": "1"},
 				json2:       map[string]interface{}{"a": "2"},
 				prefix:      "",
-				differences: make(map[string][]interface{}),
+				differences: make([]dtos.BodyDifference, 0),
 			},
-			differencesExpected:       map[string][]interface{}{"a": {"1", "2"}},
+			differencesExpected: []dtos.BodyDifference{
+				{Path: "a", Tipo: "string", Values: []interface{}{"1", "2"}},
+			},
 			amountDifferencesExpected: 1,
 		},
 		{
@@ -311,9 +355,13 @@ func TestService_compareJSON(t *testing.T) {
 				json1:       map[string]interface{}{"a": "1", "b": "2", "c": "3"},
 				json2:       map[string]interface{}{"a": "11", "b": "12", "c": "13"},
 				prefix:      "",
-				differences: make(map[string][]interface{}),
+				differences: make([]dtos.BodyDifference, 0),
 			},
-			differencesExpected:       map[string][]interface{}{"a": {"1", "11"}, "b": {"2", "12"}, "c": {"3", "13"}},
+			differencesExpected: []dtos.BodyDifference{
+				{Path: "a", Tipo: "string", Values: []interface{}{"1", "11"}},
+				{Path: "b", Tipo: "string", Values: []interface{}{"2", "12"}},
+				{Path: "c", Tipo: "string", Values: []interface{}{"3", "13"}},
+			},
 			amountDifferencesExpected: 3,
 		},
 		{
@@ -322,9 +370,9 @@ func TestService_compareJSON(t *testing.T) {
 				json1:       map[string]interface{}{"a": []interface{}{"1", "2", "3"}},
 				json2:       map[string]interface{}{"a": []interface{}{"1", "2", "3"}},
 				prefix:      "",
-				differences: make(map[string][]interface{}),
+				differences: make([]dtos.BodyDifference, 0),
 			},
-			differencesExpected:       make(map[string][]interface{}),
+			differencesExpected:       make([]dtos.BodyDifference, 0),
 			amountDifferencesExpected: 0,
 		},
 		{
@@ -333,9 +381,13 @@ func TestService_compareJSON(t *testing.T) {
 				json1:       map[string]interface{}{"a": []interface{}{"1", "2", "3"}},
 				json2:       map[string]interface{}{"a": []interface{}{"13", "22", "33"}},
 				prefix:      "",
-				differences: make(map[string][]interface{}),
+				differences: make([]dtos.BodyDifference, 0),
 			},
-			differencesExpected:       map[string][]interface{}{"a[0]": {"1", "13"}, "a[1]": {"2", "22"}, "a[2]": {"3", "33"}},
+			differencesExpected: []dtos.BodyDifference{
+				{Path: "a[0]", Tipo: "string", Values: []interface{}{"1", "13"}},
+				{Path: "a[1]", Tipo: "string", Values: []interface{}{"2", "22"}},
+				{Path: "a[2]", Tipo: "string", Values: []interface{}{"3", "33"}},
+			},
 			amountDifferencesExpected: 3,
 		},
 		{
@@ -344,9 +396,11 @@ func TestService_compareJSON(t *testing.T) {
 				json1:       map[string]interface{}{"a": []interface{}{"1", "2", "3"}},
 				json2:       map[string]interface{}{"a": "13"},
 				prefix:      "",
-				differences: make(map[string][]interface{}),
+				differences: make([]dtos.BodyDifference, 0),
 			},
-			differencesExpected:       map[string][]interface{}{"a": {[]interface{}{"1", "2", "3"}, "13"}},
+			differencesExpected: []dtos.BodyDifference{
+				{Path: "a", Tipo: "mixed", Values: []interface{}{[]interface{}{"1", "2", "3"}, "13"}},
+			},
 			amountDifferencesExpected: 1,
 		},
 		{
@@ -355,9 +409,11 @@ func TestService_compareJSON(t *testing.T) {
 				json1:       map[string]interface{}{"a": []interface{}{"1", "2", "3"}},
 				json2:       map[string]interface{}{"a": []interface{}{}},
 				prefix:      "",
-				differences: make(map[string][]interface{}),
+				differences: make([]dtos.BodyDifference, 0),
 			},
-			differencesExpected:       map[string][]interface{}{"a": {"different lengths", 3, 0}},
+			differencesExpected: []dtos.BodyDifference{
+				{Path: "a", Tipo: "array", Values: []interface{}{"different lengths", 3, 0}},
+			},
 			amountDifferencesExpected: 1,
 		},
 		{
@@ -366,9 +422,9 @@ func TestService_compareJSON(t *testing.T) {
 				json1:       map[string]interface{}{"a": []interface{}{map[string]interface{}{"b": "1"}}},
 				json2:       map[string]interface{}{"a": []interface{}{map[string]interface{}{"b": "1"}}},
 				prefix:      "",
-				differences: make(map[string][]interface{}),
+				differences: make([]dtos.BodyDifference, 0),
 			},
-			differencesExpected:       make(map[string][]interface{}),
+			differencesExpected:       make([]dtos.BodyDifference, 0),
 			amountDifferencesExpected: 0,
 		},
 		{
@@ -377,9 +433,12 @@ func TestService_compareJSON(t *testing.T) {
 				json1:       map[string]interface{}{"a": []interface{}{map[string]interface{}{"b": "1", "c": "2"}}},
 				json2:       map[string]interface{}{"a": []interface{}{map[string]interface{}{"b": "11", "c": "12"}}},
 				prefix:      "",
-				differences: make(map[string][]interface{}),
+				differences: make([]dtos.BodyDifference, 0),
 			},
-			differencesExpected:       map[string][]interface{}{"a[0].b": {"1", "11"}, "a[0].c": {"2", "12"}},
+			differencesExpected: []dtos.BodyDifference{
+				{Path: "a[0].b", Tipo: "string", Values: []interface{}{"1", "11"}},
+				{Path: "a[0].c", Tipo: "string", Values: []interface{}{"2", "12"}},
+			},
 			amountDifferencesExpected: 2,
 		},
 		{
@@ -388,9 +447,11 @@ func TestService_compareJSON(t *testing.T) {
 				json1:       map[string]interface{}{"a": []interface{}{map[string]interface{}{"b": "1", "c": "2"}}},
 				json2:       map[string]interface{}{"a": []interface{}{"11"}},
 				prefix:      "",
-				differences: make(map[string][]interface{}),
+				differences: make([]dtos.BodyDifference, 0),
 			},
-			differencesExpected:       map[string][]interface{}{"a[0]": {map[string]interface{}{"b": "1", "c": "2"}, "11"}},
+			differencesExpected: []dtos.BodyDifference{
+				{Path: "a[0]", Tipo: "mixed", Values: []interface{}{map[string]interface{}{"b": "1", "c": "2"}, "11"}},
+			},
 			amountDifferencesExpected: 1,
 		},
 		{
@@ -399,9 +460,9 @@ func TestService_compareJSON(t *testing.T) {
 				json1:       map[string]interface{}{"a": map[string]interface{}{"b": "1"}},
 				json2:       map[string]interface{}{"a": map[string]interface{}{"b": "1"}},
 				prefix:      "",
-				differences: make(map[string][]interface{}),
+				differences: make([]dtos.BodyDifference, 0),
 			},
-			differencesExpected:       make(map[string][]interface{}),
+			differencesExpected:       make([]dtos.BodyDifference, 0),
 			amountDifferencesExpected: 0,
 		},
 		{
@@ -410,9 +471,11 @@ func TestService_compareJSON(t *testing.T) {
 				json1:       map[string]interface{}{"a": map[string]interface{}{"b": "1"}},
 				json2:       map[string]interface{}{"a": map[string]interface{}{"b": "12"}},
 				prefix:      "",
-				differences: make(map[string][]interface{}),
+				differences: make([]dtos.BodyDifference, 0),
 			},
-			differencesExpected:       map[string][]interface{}{"a.b": {"1", "12"}},
+			differencesExpected: []dtos.BodyDifference{
+				{Path: "a.b", Tipo: "string", Values: []interface{}{"1", "12"}},
+			},
 			amountDifferencesExpected: 1,
 		},
 		{
@@ -421,9 +484,11 @@ func TestService_compareJSON(t *testing.T) {
 				json1:       map[string]interface{}{"a": map[string]interface{}{"b": "1"}},
 				json2:       map[string]interface{}{"a": "12"},
 				prefix:      "",
-				differences: make(map[string][]interface{}),
+				differences: make([]dtos.BodyDifference, 0),
 			},
-			differencesExpected:       map[string][]interface{}{"a": {map[string]interface{}{"b": "1"}, "12"}},
+			differencesExpected: []dtos.BodyDifference{
+				{Path: "a", Tipo: "mixed", Values: []interface{}{map[string]interface{}{"b": "1"}, "12"}},
+			},
 			amountDifferencesExpected: 1,
 		},
 		{
@@ -432,9 +497,11 @@ func TestService_compareJSON(t *testing.T) {
 				json1:       map[string]interface{}{"a": "1"},
 				json2:       make(map[string]interface{}),
 				prefix:      "test",
-				differences: make(map[string][]interface{}),
+				differences: make([]dtos.BodyDifference, 0),
 			},
-			differencesExpected:       map[string][]interface{}{"test.a": {"1", "key not found in second JSON"}},
+			differencesExpected: []dtos.BodyDifference{
+				{Path: "test.a", Tipo: "missing", Values: []interface{}{"1", "key not found in second JSON"}},
+			},
 			amountDifferencesExpected: 1,
 		}, {
 			name: "Key not found in first JSON",
@@ -442,9 +509,11 @@ func TestService_compareJSON(t *testing.T) {
 				json1:       make(map[string]interface{}),
 				json2:       map[string]interface{}{"a": "1"},
 				prefix:      "test",
-				differences: make(map[string][]interface{}),
+				differences: make([]dtos.BodyDifference, 0),
 			},
-			differencesExpected:       map[string][]interface{}{"test.a": {"key not found in first JSON", "1"}},
+			differencesExpected: []dtos.BodyDifference{
+				{Path: "test.a", Tipo: "missing", Values: []interface{}{"key not found in first JSON", "1"}},
+			},
 			amountDifferencesExpected: 1,
 		}}
 	for _, tt := range tests {
@@ -452,7 +521,7 @@ func TestService_compareJSON(t *testing.T) {
 		s := NewComparatorService(nil)
 
 		t.Run(tt.name, func(t *testing.T) {
-			s.compareJSON(tt.args.json1, tt.args.json2, tt.args.prefix, tt.args.differences)
+			s.compareJSON(tt.args.json1, tt.args.json2, tt.args.prefix, &tt.args.differences)
 
 			assert.Len(t, tt.args.differences, tt.amountDifferencesExpected)
 			assert.Equal(t, tt.differencesExpected, tt.args.differences)

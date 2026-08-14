@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"reflect"
+	"sort"
 	"strings"
 
 	"comparator/config"
@@ -110,7 +111,7 @@ func (s *Service) compareResponses(resp1, resp2 *http.Response) (dtos.CompareRes
 
 	differences := dtos.CompareResponse{
 		Headers:         make(map[string][]string),
-		BodyDifferences: make(map[string][]interface{}),
+		BodyDifferences: []dtos.BodyDifference{},
 	}
 
 	// Comparar los códigos de estado
@@ -145,16 +146,20 @@ func (s *Service) compareResponses(resp1, resp2 *http.Response) (dtos.CompareRes
 		return dtos.CompareResponse{}, err
 	}
 
-	var json1, json2 map[string]interface{}
+	var json1, json2 interface{}
 	err1 := json.Unmarshal(body1, &json1)
 	err2 := json.Unmarshal(body2, &json2)
 
 	if err1 != nil || err2 != nil {
 		// Si hay error al parsear JSON, agregar los cuerpos completos a las diferencias
-		differences.BodyDifferences["error"] = []interface{}{string(body1), string(body2)}
+		differences.BodyDifferences = append(differences.BodyDifferences, dtos.BodyDifference{
+			Path:   "",
+			Tipo:   "error",
+			Values: []interface{}{string(body1), string(body2)},
+		})
 	} else {
-		// Comparar los JSON
-		s.compareJSON(json1, json2, "", differences.BodyDifferences)
+		// Comparar los JSON (soporta objetos, arrays y escalares como raíz)
+		s.compareBodyValues(json1, json2, "", &differences.BodyDifferences)
 	}
 
 	return differences, nil
@@ -173,83 +178,114 @@ func (s *Service) readBody(body io.Reader, label string) ([]byte, error) {
 	return data, nil
 }
 
-// Función para comparar JSONs
-func (s *Service) compareJSON(json1, json2 map[string]interface{}, prefix string, differences map[string][]interface{}) {
-	for key, val1 := range json1 {
-		fullKey := key
-		if prefix != "" {
-			fullKey = prefix + "." + key
-		}
-
-		if val2, ok := json2[key]; ok {
-			// Si la clave existe en ambos, comparar los valores
-			if !reflect.DeepEqual(val1, val2) { //TODO Extender a json anidados y arrays
-				switch v1 := val1.(type) {
-				case map[string]interface{}:
-					// Si el valor es un JSON anidado, comparar recursivamente
-					if v2, ok := val2.(map[string]interface{}); ok {
-						s.compareJSON(v1, v2, fullKey, differences)
-					} else {
-						differences[fullKey] = []interface{}{val1, val2}
-					}
-				case []interface{}:
-					// Si el valor es un array, comparar elemento por elemento
-					if v2, ok := val2.([]interface{}); ok {
-						s.compareArray(v1, v2, fullKey, differences)
-					} else {
-						differences[fullKey] = []interface{}{val1, val2}
-					}
-				default:
-					// Otros tipos (números, cadenas, booleanos, etc.)
-					differences[fullKey] = []interface{}{val1, val2}
-				}
-			}
+// compareBodyValues compara dos valores JSON arbitrarios (objeto, array o escalar),
+// incluso como cuerpo raíz.
+func (s *Service) compareBodyValues(v1, v2 interface{}, prefix string, differences *[]dtos.BodyDifference) {
+	switch a := v1.(type) {
+	case map[string]interface{}:
+		if b, ok := v2.(map[string]interface{}); ok {
+			s.compareJSON(a, b, prefix, differences)
 		} else {
-			// Si la clave solo está en json1
-			differences[fullKey] = []interface{}{val1, "key not found in second JSON"}
+			s.addDiff(differences, prefix, mixedType(a, v2), a, v2)
+		}
+	case []interface{}:
+		if b, ok := v2.([]interface{}); ok {
+			s.compareArray(a, b, prefix, differences)
+		} else {
+			s.addDiff(differences, prefix, mixedType(a, v2), a, v2)
+		}
+	default:
+		if !reflect.DeepEqual(v1, v2) {
+			s.addDiff(differences, prefix, mixedType(v1, v2), v1, v2)
 		}
 	}
+}
 
-	// Verificar claves que están en json2 pero no en json1
-	for key, val2 := range json2 {
+// addDiff agrega una diferencia al resultado, normalizando su tipo.
+func (s *Service) addDiff(differences *[]dtos.BodyDifference, path, tipo string, values ...interface{}) {
+	*differences = append(*differences, dtos.BodyDifference{Path: path, Tipo: tipo, Values: values})
+}
+
+// mixedType devuelve el tipo JSON de los valores si coinciden, o "mixed" si difieren.
+func mixedType(v1, v2 interface{}) string {
+	t1, t2 := jsonType(v1), jsonType(v2)
+	if t1 == t2 {
+		return t1
+	}
+	return "mixed"
+}
+
+// jsonType devuelve el nombre del tipo JSON de un valor.
+func jsonType(v interface{}) string {
+	switch v.(type) {
+	case map[string]interface{}:
+		return "object"
+	case []interface{}:
+		return "array"
+	case string:
+		return "string"
+	case float64, float32, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		return "number"
+	case bool:
+		return "boolean"
+	case nil:
+		return "null"
+	default:
+		return "unknown"
+	}
+}
+
+// sortedUnionKeys devuelve la unión ordenada de las claves de ambos objetos,
+// para que el resultado sea determinista.
+func sortedUnionKeys(m1, m2 map[string]interface{}) []string {
+	set := make(map[string]struct{})
+	for key := range m1 {
+		set[key] = struct{}{}
+	}
+	for key := range m2 {
+		set[key] = struct{}{}
+	}
+	keys := make([]string, 0, len(set))
+	for key := range set {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+// Función para comparar JSONs
+func (s *Service) compareJSON(m1, m2 map[string]interface{}, prefix string, differences *[]dtos.BodyDifference) {
+	for _, key := range sortedUnionKeys(m1, m2) {
 		fullKey := key
 		if prefix != "" {
 			fullKey = prefix + "." + key
 		}
 
-		if _, ok := json1[key]; !ok {
-			differences[fullKey] = []interface{}{"key not found in first JSON", val2}
+		val1, ok1 := m1[key]
+		val2, ok2 := m2[key]
+
+		switch {
+		case ok1 && ok2:
+			s.compareBodyValues(val1, val2, fullKey, differences)
+		case ok1:
+			s.addDiff(differences, fullKey, "missing", val1, "key not found in second JSON")
+		default:
+			s.addDiff(differences, fullKey, "missing", "key not found in first JSON", val2)
 		}
 	}
 }
 
 // Función para comparar arrays
-func (s *Service) compareArray(arr1, arr2 []interface{}, prefix string, differences map[string][]interface{}) {
-	len1 := len(arr1)
-	len2 := len(arr2)
-
-	// Si las longitudes son diferentes, reportar la diferencia
-	if len1 != len2 {
-		differences[prefix] = []interface{}{"different lengths", len1, len2}
+func (s *Service) compareArray(arr1, arr2 []interface{}, prefix string, differences *[]dtos.BodyDifference) {
+	if len(arr1) != len(arr2) {
+		s.addDiff(differences, prefix, "array", "different lengths", len(arr1), len(arr2))
 	}
 
-	// Comparar los elementos del array
-	for i := 0; i < len1 && i < len2; i++ {
-		fullKey := fmt.Sprintf("%s[%d]", prefix, i)
-
-		switch v1 := arr1[i].(type) {
-		case map[string]interface{}:
-			// Si el elemento es un objeto JSON, comparar recursivamente
-			if v2, ok := arr2[i].(map[string]interface{}); ok {
-				s.compareJSON(v1, v2, fullKey, differences)
-			} else {
-				differences[fullKey] = []interface{}{arr1[i], arr2[i]}
-			}
-		default:
-			// Comparar otros tipos de elementos
-			if !reflect.DeepEqual(arr1[i], arr2[i]) {
-				differences[fullKey] = []interface{}{arr1[i], arr2[i]}
-			}
-		}
+	n := len(arr1)
+	if len(arr2) < n {
+		n = len(arr2)
+	}
+	for i := 0; i < n; i++ {
+		s.compareBodyValues(arr1[i], arr2[i], fmt.Sprintf("%s[%d]", prefix, i), differences)
 	}
 }

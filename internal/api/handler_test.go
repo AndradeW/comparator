@@ -62,7 +62,7 @@ func TestHandler_CompareHandler(t *testing.T) {
 	expectedResponse := dtos.CompareResponse{
 		StatusCodes:     nil,
 		Headers:         make(map[string][]string),
-		BodyDifferences: make(map[string][]interface{}),
+		BodyDifferences: []dtos.BodyDifference{},
 	}
 
 	assert.Equal(t, expectedResponse, response)

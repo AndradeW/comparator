@@ -193,12 +193,12 @@
   function renderLedger(data) {
     var statusCodes = data.status_codes || [];
     var headers = data.headers || {};
-    var body = data.body_differences || {};
+    var body = data.body_differences || [];
 
     var headerKeys = Object.keys(headers);
-    var bodyKeys = Object.keys(body);
+    var bodyCount = body.length;
     var statusDiff = statusCodes.length === 2;
-    var total = (statusDiff ? 1 : 0) + headerKeys.length + bodyKeys.length;
+    var total = (statusDiff ? 1 : 0) + headerKeys.length + bodyCount;
 
     renderVerdict(total);
 
@@ -226,13 +226,13 @@
       root.appendChild(gHeaders);
     }
 
-    if (bodyKeys.length > 0) {
+    if (body.length > 0) {
       var gBody = group("Body");
-      bodyKeys.forEach(function (key) {
-        if (key === "error") {
-          gBody.appendChild(rawBodyRow(body[key]));
+      body.forEach(function (item) {
+        if (item.tipo === "error") {
+          gBody.appendChild(rawBodyRow(item.values));
         } else {
-          gBody.appendChild(bodyDiffRow(key, body[key]));
+          gBody.appendChild(bodyDiffRow(item.path, item.values));
         }
       });
       root.appendChild(gBody);

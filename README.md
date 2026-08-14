@@ -16,12 +16,15 @@ go run ./cmd
 
 Escucha en `:8080` por defecto.
 
-Test y vet:
+Test, vet y lint:
 
 ```bash
 go test ./...
 go vet ./...
+golangci-lint run ./...
 ```
+
+También hay un `Makefile` con `make build`, `make run`, `make test`, `make vet`, `make lint` y `make fmt`.
 
 ## API
 
@@ -31,16 +34,18 @@ Recibe dos descripciones de request y compara sus respuestas.
 
 ```json
 {
-  "request1": { "url": "https://api.example.com/users/1", "headers": {}, "params": {} },
-  "request2": { "url": "https://api.example.com/users/1", "headers": {}, "params": {} }
+  "request1": { "url": "https://api.example.com/users/1", "method": "GET", "headers": {}, "params": {}, "body": "" },
+  "request2": { "url": "https://api.example.com/users/1", "method": "GET", "headers": {}, "params": {}, "body": "" }
 }
 ```
 
 Cada `requestN` admite:
 
 - `url` (requerido): URL del upstream.
+- `method` (opcional): `GET` (default), `POST`, `PUT`, `PATCH`, `DELETE`, `HEAD` u `OPTIONS`.
 - `headers` (opcional): mapa `clave -> valor` de headers a enviar.
 - `params` (opcional): mapa `clave -> valor` de query params, combinados con los de la URL.
+- `body` (opcional): cuerpo crudo de la petición.
 
 Respuesta:
 
@@ -53,6 +58,10 @@ Respuesta:
   ]
 }
 ```
+
+`body_differences` es un array de diferencias con `path` (ruta en el JSON, ej. `a[0].b`), `tipo` (`object`, `array`, `string`, `number`, `boolean`, `null`, `mixed`, `missing`, `error`) y `values` (ambos valores; sentinels `key not found in first/second JSON` o `different lengths` para esos casos). Soporta objetos, arrays y escalares como cuerpo raíz.
+
+Cada respuesta incluye el header `X-Request-ID` (propio o recibido) y los logs estructurados usan ese ID.
 
 Errores:
 
@@ -99,7 +108,9 @@ internal/
   cors/                     # middleware CORS
   dtos/                     # tipos de entrada/salida de la API
   httpclient/               # cliente HTTP con timeout
+  requestlog/               # request IDs y logs estructurados
   routes/                   # montado de rutas (Go 1.22 method patterns)
+.github/workflows/ci.yml    # build, test, vet y golangci-lint
 .github/workflows/pages.yml # deploy de frontend a GitHub Pages
 ```
 
@@ -109,4 +120,5 @@ internal/
 - Las interfaces se definen en el consumidor (ej: `api.Handler` recibe la interfaz de `comparator.Service`).
 - Errores tipados (`ValidationError`, `UpstreamError`) mapeados a `400` / `502` / `500` en el handler.
 - Commits con Conventional Commits (`feat:`, `fix:`, `docs:`, ...).
+- Los cambios a la API viven en ramas `feature/*` y se integran por PR.
 - Los planes de trabajo (`PLAN_*.md`) y configuraciones locales no se versionan.

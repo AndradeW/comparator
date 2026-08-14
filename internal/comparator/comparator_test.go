@@ -32,6 +32,56 @@ func (failingClient) Do(req *http.Request) (*http.Response, error) {
 	return nil, errors.New("connection refused")
 }
 
+// capturingClient captura el request recibido y devuelve una respuesta fija.
+type capturingClient struct {
+	req *http.Request
+}
+
+func (c *capturingClient) Do(req *http.Request) (*http.Response, error) {
+	c.req = req
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{},
+		Body:       io.NopCloser(strings.NewReader(`{}`)),
+	}, nil
+}
+
+func TestService_makeRequest_enviaMetodoYBody(t *testing.T) {
+	client := &capturingClient{}
+	s := NewComparatorService(client)
+
+	_, err := s.makeRequest(dtos.RequestDetails{
+		URL:    "https://example.com/",
+		Method: "post",
+		Body:   `{"hola":"mundo"}`,
+	})
+	assert.NoError(t, err)
+
+	assert.Equal(t, http.MethodPost, client.req.Method)
+
+	body, err := io.ReadAll(client.req.Body)
+	assert.NoError(t, err)
+	assert.Equal(t, `{"hola":"mundo"}`, string(body))
+}
+
+func TestService_makeRequest_metodoPorDefectoGET(t *testing.T) {
+	client := &capturingClient{}
+	s := NewComparatorService(client)
+
+	_, err := s.makeRequest(dtos.RequestDetails{URL: "https://example.com/"})
+	assert.NoError(t, err)
+	assert.Equal(t, http.MethodGet, client.req.Method)
+}
+
+func TestService_makeRequest_metodoNoPermitido(t *testing.T) {
+	s := NewComparatorService(nil)
+
+	_, err := s.makeRequest(dtos.RequestDetails{URL: "https://example.com/", Method: "CONNECT"})
+
+	var validationErr *ValidationError
+	assert.ErrorAs(t, err, &validationErr)
+}
+
 func TestService_compareResponses_cierraBodies(t *testing.T) {
 	body1 := &trackingBody{ReadCloser: io.NopCloser(strings.NewReader(`{"a": 1}`))}
 	body2 := &trackingBody{ReadCloser: io.NopCloser(strings.NewReader(`{"a": 1}`))}

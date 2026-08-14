@@ -21,22 +21,50 @@
     <section class="request-grid" aria-label="Requests a comparar">
       <div class="request-panel" data-side="a">
         <h2 class="panel-title">Request A</h2>
-        <label for="url1">URL</label>
-        <input id="url1" class="field" type="text" placeholder="https://pokeapi.co/api/v2/pokemon/ditto" autocomplete="off" spellcheck="false">
+        <div class="url-row">
+          <label for="url1">URL</label>
+          <input id="url1" class="field" type="text" placeholder="https://pokeapi.co/api/v2/pokemon/ditto" autocomplete="off" spellcheck="false">
+          <label for="method1">Método</label>
+          <select id="method1" class="field">
+            <option value="GET" selected>GET</option>
+            <option value="POST">POST</option>
+            <option value="PUT">PUT</option>
+            <option value="PATCH">PATCH</option>
+            <option value="DELETE">DELETE</option>
+            <option value="HEAD">HEAD</option>
+            <option value="OPTIONS">OPTIONS</option>
+          </select>
+        </div>
         <label for="headers1">Headers</label>
         <textarea id="headers1" class="field json-field" rows="3" placeholder='{"Accept": "application/json"}'></textarea>
         <label for="params1">Parámetros</label>
         <textarea id="params1" class="field json-field" rows="2" placeholder='{"key": "value"}'></textarea>
+        <label for="body1">Body</label>
+        <textarea id="body1" class="field" rows="2" placeholder='{"hola": "mundo"}'></textarea>
       </div>
 
       <div class="request-panel" data-side="b">
         <h2 class="panel-title">Request B</h2>
-        <label for="url2">URL</label>
-        <input id="url2" class="field" type="text" placeholder="https://pokeapi.co/api/v2/pokemon/pikachu" autocomplete="off" spellcheck="false">
+        <div class="url-row">
+          <label for="url2">URL</label>
+          <input id="url2" class="field" type="text" placeholder="https://pokeapi.co/api/v2/pokemon/pikachu" autocomplete="off" spellcheck="false">
+          <label for="method2">Método</label>
+          <select id="method2" class="field">
+            <option value="GET" selected>GET</option>
+            <option value="POST">POST</option>
+            <option value="PUT">PUT</option>
+            <option value="PATCH">PATCH</option>
+            <option value="DELETE">DELETE</option>
+            <option value="HEAD">HEAD</option>
+            <option value="OPTIONS">OPTIONS</option>
+          </select>
+        </div>
         <label for="headers2">Headers</label>
         <textarea id="headers2" class="field json-field" rows="3" placeholder='{"Accept": "application/json"}'></textarea>
         <label for="params2">Parámetros</label>
         <textarea id="params2" class="field json-field" rows="2" placeholder='{"key": "value"}'></textarea>
+        <label for="body2">Body</label>
+        <textarea id="body2" class="field" rows="2" placeholder='{"hola": "mundo"}'></textarea>
       </div>
     </section>
 

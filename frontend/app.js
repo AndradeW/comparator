@@ -34,10 +34,14 @@
     if (!url) {
       throw new Error("Falta la URL del Request " + (id === 1 ? "A" : "B"));
     }
+    var method = document.getElementById("method" + id).value;
+    var body = document.getElementById("body" + id).value;
     return {
       url: url,
+      method: method,
       headers: readJson(document.getElementById("headers" + id).value, "Headers " + (id === 1 ? "A" : "B")),
-      params: readJson(document.getElementById("params" + id).value, "Parámetros " + (id === 1 ? "A" : "B"))
+      params: readJson(document.getElementById("params" + id).value, "Parámetros " + (id === 1 ? "A" : "B")),
+      body: body
     };
   }
 

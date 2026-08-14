@@ -154,6 +154,20 @@ body {
   border-color: var(--tinta);
 }
 
+.url-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.25rem;
+}
+
+.url-row select {
+  width: 100%;
+}
+
+.url-row select.field {
+  height: auto;
+}
+
 .json-field {
   resize: vertical;
   min-height: 2.5rem;

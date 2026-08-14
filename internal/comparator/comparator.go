@@ -56,14 +56,33 @@ func (s *Service) CompareRequest(request dtos.Request) (dtos.CompareResponse, er
 	return differences, nil
 }
 
+// Métodos HTTP permitidos para la petición upstream.
+var allowedMethods = map[string]struct{}{
+	http.MethodGet:     {},
+	http.MethodPost:    {},
+	http.MethodPut:     {},
+	http.MethodPatch:   {},
+	http.MethodDelete:  {},
+	http.MethodHead:    {},
+	http.MethodOptions: {},
+}
+
 // Función para realizar la petición HTTP
 func (s *Service) makeRequest(reqDetails dtos.RequestDetails) (*http.Response, error) {
 	if err := validateURL(reqDetails.URL); err != nil {
 		return nil, err
 	}
 
+	method := http.MethodGet
+	if reqDetails.Method != "" {
+		method = strings.ToUpper(reqDetails.Method)
+		if _, ok := allowedMethods[method]; !ok {
+			return nil, &ValidationError{Message: fmt.Sprintf("método HTTP no permitido: %s", reqDetails.Method)}
+		}
+	}
+
 	// Construir la URL con parámetros
-	req, err := http.NewRequest(http.MethodGet, reqDetails.URL, nil)
+	req, err := http.NewRequest(method, reqDetails.URL, strings.NewReader(reqDetails.Body))
 	if err != nil {
 		return nil, err
 	}

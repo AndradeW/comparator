@@ -9,8 +9,10 @@ type Request struct {
 // Estructura para capturar input del usuario
 type RequestDetails struct {
 	URL     string            `json:"url"`
+	Method  string            `json:"method"`
 	Headers map[string]string `json:"headers"`
 	Params  map[string]string `json:"params"`
+	Body    string            `json:"body"`
 }
 
 // Estructura para almacenar las diferencias

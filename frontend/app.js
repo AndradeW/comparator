@@ -8,11 +8,8 @@
     verdict: document.getElementById("verdict"),
     ledger: document.getElementById("ledger"),
     results: document.getElementById("results"),
-    error: document.getElementById("error"),
-    apiBase: document.getElementById("apiBase")
+    error: document.getElementById("error")
   };
-
-  els.apiBase.textContent = baseUrl;
 
   var SENTINEL_A_MISSING = "key not found in first JSON";
   var SENTINEL_B_MISSING = "key not found in second JSON";
@@ -80,6 +77,104 @@
       node.textContent = text;
     }
     return node;
+  }
+
+  // ---------- Render de valores como JSON con sintaxis ----------
+
+  function appendJson(node, v, depth) {
+    if (v === null) {
+      node.appendChild(el("span", "tok tok-bool", "null"));
+      return;
+    }
+    if (typeof v === "string") {
+      node.appendChild(el("span", "tok tok-str", JSON.stringify(v)));
+      return;
+    }
+    if (typeof v === "number") {
+      node.appendChild(el("span", "tok tok-num", String(v)));
+      return;
+    }
+    if (typeof v === "boolean") {
+      node.appendChild(el("span", "tok tok-bool", String(v)));
+      return;
+    }
+    if (typeof v === "object") {
+      appendJsonObject(node, v, depth || 0);
+      return;
+    }
+    node.appendChild(el("span", "tok", String(v)));
+  }
+
+  function repeat(str, n) {
+    var out = "";
+    for (var i = 0; i < n; i++) {
+      out += str;
+    }
+    return out;
+  }
+
+  function appendJsonObject(node, v, depth) {
+    var isArr = Array.isArray(v);
+    var keys = isArr ? v.map(function (_, i) { return String(i); }) : Object.keys(v);
+
+    node.appendChild(el("span", "tok tok-punc", isArr ? "[" : "{"));
+    if (keys.length === 0) {
+      node.appendChild(el("span", "tok tok-punc", isArr ? "]" : "}"));
+      return;
+    }
+
+    var innerPad = "\n" + repeat("  ", depth + 1);
+    var closePad = "\n" + repeat("  ", depth);
+    keys.forEach(function (key, i) {
+      node.appendChild(el("span", "tok tok-line", innerPad));
+      if (!isArr) {
+        node.appendChild(el("span", "tok tok-key", JSON.stringify(key)));
+        node.appendChild(el("span", "tok tok-punc", ": "));
+      }
+      appendJson(node, v[key], depth + 1);
+      if (i < keys.length - 1) {
+        node.appendChild(el("span", "tok tok-punc", ","));
+      }
+    });
+    node.appendChild(el("span", "tok tok-line", closePad));
+    node.appendChild(el("span", "tok tok-punc", isArr ? "]" : "}"));
+  }
+
+  function jsonCell(v, side) {
+    var cell = el("span", "cell cell-" + (side || "a") + " cell-val");
+    appendJson(cell, v);
+    return cell;
+  }
+
+  // ---------- Paths como sub-nodos ----------
+
+  function pathDepth(key) {
+    var depth = 0;
+    for (var i = 0; i < key.length; i++) {
+      if (key.charAt(i) === ".") {
+        depth++;
+      }
+    }
+    return depth;
+  }
+
+  function pathLabel(key) {
+    var segs = key.split(".");
+    var wrap = el("span");
+    segs.forEach(function (seg, i) {
+      if (i > 0) {
+        wrap.appendChild(el("span", "tok tok-punc", "."));
+      }
+      wrap.appendChild(el("span", "tok " + (i < segs.length - 1 ? "path-anc" : "path-leaf"), seg));
+    });
+    return wrap;
+  }
+
+  function labelCell(key) {
+    var cell = el("span", "cell cell-label");
+    cell.style.paddingLeft = (1 + pathDepth(key) * 1.1) + "rem";
+    cell.appendChild(pathLabel(key));
+    return cell;
   }
 
   function renderVerdict(total) {
@@ -151,8 +246,8 @@
   function diffRow(label, a, b) {
     var row = el("div", "row row-diff");
     row.appendChild(el("span", "cell cell-label", label));
-    row.appendChild(el("span", "cell cell-a cell-val", fmt(a)));
-    row.appendChild(el("span", "cell cell-b cell-val", fmt(b)));
+    row.appendChild(jsonCell(a, "a"));
+    row.appendChild(jsonCell(b, "b"));
     return row;
   }
 
@@ -169,9 +264,24 @@
     var bMissing = b === SENTINEL_B_MISSING;
 
     var row = el("div", "row row-diff");
-    row.appendChild(el("span", "cell cell-label", key));
-    row.appendChild(el("span", "cell cell-a cell-val" + (aMissing ? " cell-missing" : ""), aMissing ? "(no existe en A)" : fmt(a)));
-    row.appendChild(el("span", "cell cell-b cell-val" + (bMissing ? " cell-missing" : ""), bMissing ? "(no existe en B)" : fmt(b)));
+    row.appendChild(labelCell(key));
+
+    var cellA = el("span", "cell cell-a cell-val" + (aMissing ? " cell-missing" : ""));
+    if (aMissing) {
+      cellA.textContent = "(no existe en A)";
+    } else {
+      appendJson(cellA, a);
+    }
+
+    var cellB = el("span", "cell cell-b cell-val" + (bMissing ? " cell-missing" : ""));
+    if (bMissing) {
+      cellB.textContent = "(no existe en B)";
+    } else {
+      appendJson(cellB, b);
+    }
+
+    row.appendChild(cellA);
+    row.appendChild(cellB);
     return row;
   }
 

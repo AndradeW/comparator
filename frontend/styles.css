@@ -1,5 +1,5 @@
 /* ============================================================
-   Comparator — "Comprobante de cotejo"
+   Comparator — "Comprobante de comparación"
    Ledger de prueba de imprenta: tinta roja (A) / azul (B).
    ============================================================ */
 
@@ -331,6 +331,9 @@ body {
 
 .cell-val {
   font-size: 0.82rem;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .row-status .cell-val {
@@ -358,6 +361,43 @@ body {
   grid-column: 1 / -1;
   color: var(--tinta-suave);
   font-size: 0.8rem;
+}
+
+/* ---------- Tokens JSON ---------- */
+
+.tok-line {
+  white-space: pre;
+}
+
+.tok-str {
+  color: var(--verde);
+}
+
+.tok-num {
+  color: #A05A0C;
+}
+
+.tok-bool {
+  color: var(--azul-b);
+}
+
+.tok-key {
+  color: #7A3E9D;
+}
+
+.tok-punc {
+  color: var(--tinta-suave);
+}
+
+/* ---------- Paths (sub-nodos) ---------- */
+
+.path-anc {
+  color: var(--tinta-suave);
+}
+
+.path-leaf {
+  color: var(--tinta);
+  font-weight: 500;
 }
 
 .cell-full {
@@ -400,15 +440,6 @@ body {
   background: rgba(179, 58, 51, 0.06);
   color: var(--rojo-a);
   font-size: 0.82rem;
-}
-
-/* ---------- Footer ---------- */
-
-.footer {
-  padding: 1rem 1.5rem 2rem;
-  text-align: center;
-  color: var(--tinta-suave);
-  font-size: 0.72rem;
 }
 
 /* ---------- Responsive ---------- */

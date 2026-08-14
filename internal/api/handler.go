@@ -9,6 +9,7 @@ import (
 	"comparator/config"
 	"comparator/internal/comparator"
 	"comparator/internal/dtos"
+	"comparator/internal/requestlog"
 )
 
 type Handler struct {
@@ -47,12 +48,12 @@ func (h *Handler) CompareHandler(w http.ResponseWriter, r *http.Request) {
 
 		var upstreamErr *comparator.UpstreamError
 		if errors.As(err, &upstreamErr) {
-			slog.Warn("error del servidor destino", "error", err)
+			slog.Warn("error del servidor destino", "request_id", requestlog.FromContext(r.Context()), "error", err)
 			http.Error(w, "upstream error", http.StatusBadGateway)
 			return
 		}
 
-		slog.Error("error al comparar las peticiones", "error", err)
+		slog.Error("error al comparar las peticiones", "request_id", requestlog.FromContext(r.Context()), "error", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}

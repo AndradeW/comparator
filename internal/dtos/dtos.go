@@ -25,7 +25,7 @@ type BodyDifference struct {
 
 // Estructura para almacenar las diferencias
 type CompareResponse struct {
-	StatusCodes     []int             `json:"status_codes"`
+	StatusCodes     []int               `json:"status_codes"`
 	Headers         map[string][]string `json:"headers"`
-	BodyDifferences []BodyDifference  `json:"body_differences"`
+	BodyDifferences []BodyDifference    `json:"body_differences"`
 }

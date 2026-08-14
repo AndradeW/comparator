@@ -9,6 +9,7 @@ import (
 	"comparator/internal/comparator"
 	"comparator/internal/cors"
 	"comparator/internal/httpclient"
+	"comparator/internal/requestlog"
 	"comparator/internal/routes"
 )
 
@@ -21,5 +22,5 @@ func main() {
 	routes.SetupRoutes(server, handler)
 
 	log.Println("Listening on " + config.GetPort())
-	log.Fatal(http.ListenAndServe(config.GetPort(), cors.Middleware(server)))
+	log.Fatal(http.ListenAndServe(config.GetPort(), requestlog.Middleware(cors.Middleware(server))))
 }

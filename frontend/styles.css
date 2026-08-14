@@ -178,6 +178,27 @@ body {
 .action-bar {
   margin: 1.5rem 0;
   text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.volatile-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--fuente-mono);
+  font-size: 0.72rem;
+  color: var(--tinta-suave);
+  cursor: pointer;
+  user-select: none;
+}
+
+.volatile-toggle input {
+  accent-color: var(--tinta);
+  cursor: pointer;
 }
 
 .compare-btn {

@@ -4,52 +4,55 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Comparator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header>
-    <h1>Comparator</h1>
-    <p class="subtitle">Compara dos respuestas HTTP (status, headers y cuerpo JSON)</p>
+  <header class="masthead">
+    <div class="masthead-inner">
+      <h1 class="brand">Comparator</h1>
+      <p class="tagline">Coteja dos respuestas HTTP: status, headers y cuerpo JSON</p>
+    </div>
   </header>
 
-  <main>
-    <section class="panel">
-      <h2>Request 1</h2>
-      <label for="url1">URL</label>
-      <input type="text" id="url1" placeholder="https://pokeapi.co/api/v2/pokemon/ditto">
+  <main class="page">
+    <section class="request-grid" aria-label="Requests a comparar">
+      <div class="request-panel" data-side="a">
+        <h2 class="panel-title">Request A</h2>
+        <label for="url1">URL</label>
+        <input id="url1" class="field" type="text" placeholder="https://pokeapi.co/api/v2/pokemon/ditto" autocomplete="off" spellcheck="false">
+        <label for="headers1">Headers</label>
+        <textarea id="headers1" class="field json-field" rows="3" placeholder='{"Accept": "application/json"}'></textarea>
+        <label for="params1">Parámetros</label>
+        <textarea id="params1" class="field json-field" rows="2" placeholder='{"key": "value"}'></textarea>
+      </div>
 
-      <label for="headers1">Headers (JSON)</label>
-      <textarea id="headers1" rows="2" placeholder='{"Accept": "application/json"}'></textarea>
-
-      <label for="params1">Parámetros (JSON)</label>
-      <textarea id="params1" rows="2" placeholder='{"key": "value"}'></textarea>
+      <div class="request-panel" data-side="b">
+        <h2 class="panel-title">Request B</h2>
+        <label for="url2">URL</label>
+        <input id="url2" class="field" type="text" placeholder="https://pokeapi.co/api/v2/pokemon/pikachu" autocomplete="off" spellcheck="false">
+        <label for="headers2">Headers</label>
+        <textarea id="headers2" class="field json-field" rows="3" placeholder='{"Accept": "application/json"}'></textarea>
+        <label for="params2">Parámetros</label>
+        <textarea id="params2" class="field json-field" rows="2" placeholder='{"key": "value"}'></textarea>
+      </div>
     </section>
 
-    <section class="panel">
-      <h2>Request 2</h2>
-      <label for="url2">URL</label>
-      <input type="text" id="url2" placeholder="https://pokeapi.co/api/v2/pokemon/pikachu">
-
-      <label for="headers2">Headers (JSON)</label>
-      <textarea id="headers2" rows="2" placeholder='{"Accept": "application/json"}'></textarea>
-
-      <label for="params2">Parámetros (JSON)</label>
-      <textarea id="params2" rows="2" placeholder='{"key": "value"}'></textarea>
-    </section>
-
-    <div class="actions">
-      <button id="compare">Comparar</button>
+    <div class="action-bar">
+      <button id="compare" class="compare-btn" type="button">Comparar</button>
     </div>
 
-    <section id="results" class="results hidden">
-      <h2>Resultado</h2>
-      <pre id="output"></pre>
+    <section id="results" class="results" aria-live="polite" hidden>
+      <div id="verdict" class="verdict"></div>
+      <div id="ledger" class="ledger"></div>
     </section>
 
-    <p id="error" class="error hidden"></p>
+    <p id="error" class="error" role="alert" hidden></p>
   </main>
 
-  <footer>
+  <footer class="footer">
     <p>Servicio: <span id="apiBase"></span></p>
   </footer>
 

@@ -9,7 +9,8 @@
     ledger: document.getElementById("ledger"),
     results: document.getElementById("results"),
     error: document.getElementById("error"),
-    volatileToggle: document.getElementById("volatile-headers")
+    volatileToggle: document.getElementById("volatile-headers"),
+    filter: document.getElementById("ledger-filter")
   };
 
   var SENTINEL_A_MISSING = "key not found in first JSON";
@@ -199,40 +200,63 @@
 
   var lastData = null;
 
+  function currentFilter() {
+    return (els.filter && els.filter.value ? els.filter.value : "").trim().toLowerCase();
+  }
+
+  function countLabel(visible, total) {
+    if (visible === total) {
+      return " · " + visible;
+    }
+    return " · " + visible + " de " + total;
+  }
+
   function renderLedger(data) {
     var statusCodes = data.status_codes || [];
     var headers = data.headers || {};
     var body = data.body_differences || [];
 
     var showVolatile = !els.volatileToggle.checked;
-    var headerKeys = Object.keys(headers).filter(function (key) {
+    var q = currentFilter();
+
+    var allHeaderKeys = Object.keys(headers).filter(function (key) {
       return showVolatile || !isVolatileHeader(key);
     });
-    var hiddenVolatile = headerKeys.length !== Object.keys(headers).length;
+    var headerKeys = allHeaderKeys.filter(function (key) {
+      return !q || key.toLowerCase().indexOf(q) !== -1;
+    });
+    var hiddenVolatile = allHeaderKeys.length !== Object.keys(headers).length;
 
-    var bodyCount = body.length;
-    var statusDiff = statusCodes.length === 2;
-    var total = (statusDiff ? 1 : 0) + headerKeys.length + bodyCount;
+    var bodyRows = body.filter(function (item) {
+      return !q || item.path.toLowerCase().indexOf(q) !== -1;
+    });
+
+    var statusDiff = statusCodes.length === 2 && statusCodes[0] !== statusCodes[1];
+    var total = (statusDiff ? 1 : 0) + headerKeys.length + bodyRows.length;
+    var hasDiffs = statusDiff || allHeaderKeys.length > 0 || body.length > 0;
 
     renderVerdict(total);
+    if (els.filter) {
+      els.filter.hidden = !hasDiffs;
+    }
 
     var root = document.createElement("div");
     els.ledger.textContent = "";
     els.ledger.appendChild(root);
 
     if (statusCodes.length > 0) {
-      var g = group("Status");
-      var row = el("div", "row row-status" + (statusDiff ? " row-diff" : " row-equal"));
-      row.appendChild(el("span", "cell cell-label", "status"));
+      var gStatus = group("Status" + (statusDiff ? " · 1" : ""));
+      var srow = el("div", "row row-status" + (statusDiff ? " row-diff" : " row-equal"));
+      srow.appendChild(el("span", "cell cell-label", "status"));
       var code = String(statusCodes[0]);
-      row.appendChild(el("span", "cell cell-a cell-val", code));
-      row.appendChild(el("span", "cell cell-b cell-val", statusDiff ? String(statusCodes[1]) : code));
-      g.appendChild(row);
-      root.appendChild(g);
+      srow.appendChild(el("span", "cell cell-a cell-val", code));
+      srow.appendChild(el("span", "cell cell-b cell-val", statusDiff ? String(statusCodes[1]) : code));
+      gStatus.appendChild(srow);
+      root.appendChild(gStatus);
     }
 
     if (headerKeys.length > 0) {
-      var gHeaders = group("Headers");
+      var gHeaders = group("Headers" + countLabel(headerKeys.length, allHeaderKeys.length));
       headerKeys.forEach(function (key) {
         var vals = headers[key];
         gHeaders.appendChild(diffRow(key, vals[0], vals[1]));
@@ -243,9 +267,9 @@
       root.appendChild(gHeaders);
     }
 
-    if (body.length > 0) {
-      var gBody = group("Body");
-      body.forEach(function (item) {
+    if (bodyRows.length > 0) {
+      var gBody = group("Body" + countLabel(bodyRows.length, body.length));
+      bodyRows.forEach(function (item) {
         if (item.tipo === "error") {
           gBody.appendChild(rawBodyRow(item.values));
         } else {
@@ -255,8 +279,10 @@
       root.appendChild(gBody);
     }
 
-    if (total === 0) {
+    if (!hasDiffs) {
       root.appendChild(el("p", "ledger-note", "No hay diferencias: status, headers y body coinciden."));
+    } else if (total === 0) {
+      root.appendChild(el("p", "ledger-note", "Sin coincidencias para el filtro «" + q + "»."));
     }
   }
 
@@ -355,4 +381,12 @@
       renderLedger(lastData);
     }
   });
+
+  if (els.filter) {
+    els.filter.addEventListener("input", function () {
+      if (lastData) {
+        renderLedger(lastData);
+      }
+    });
+  }
 })();

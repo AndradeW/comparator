@@ -54,3 +54,54 @@ func TestClientSuccess(t *testing.T) {
 		t.Fatalf("StatusCode = %d, se esperaba 200", resp.StatusCode)
 	}
 }
+
+func TestClientDefaultUserAgent(t *testing.T) {
+	var received string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		received = r.Header.Get("User-Agent")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	client := &HTTPClient{client: http.Client{Timeout: time.Second}}
+
+	req, err := http.NewRequest(http.MethodGet, server.URL, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = resp.Body.Close()
+
+	if received != defaultUserAgent {
+		t.Fatalf("User-Agent = %q, se esperaba %q", received, defaultUserAgent)
+	}
+}
+
+func TestClientKeepsUserAgent(t *testing.T) {
+	var received string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		received = r.Header.Get("User-Agent")
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	client := &HTTPClient{client: http.Client{Timeout: time.Second}}
+
+	req, err := http.NewRequest(http.MethodGet, server.URL, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("User-Agent", "MiCliente/2.0")
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = resp.Body.Close()
+
+	if received != "MiCliente/2.0" {
+		t.Fatalf("User-Agent = %q, se esperaba el del usuario", received)
+	}
+}

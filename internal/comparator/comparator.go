@@ -114,10 +114,8 @@ func (s *Service) compareResponses(resp1, resp2 *http.Response) (dtos.CompareRes
 		BodyDifferences: []dtos.BodyDifference{},
 	}
 
-	// Comparar los códigos de estado
-	if resp1.StatusCode != resp2.StatusCode {
-		differences.StatusCodes = []int{resp1.StatusCode, resp2.StatusCode}
-	}
+	// Comparar los códigos de estado (siempre se reportan ambos)
+	differences.StatusCodes = []int{resp1.StatusCode, resp2.StatusCode}
 
 	// Comparar los headers (unión de keys de ambas respuestas, preservando multi-valores)
 	headerKeys := make(map[string]struct{})

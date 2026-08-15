@@ -60,7 +60,7 @@ func TestHandler_CompareHandler(t *testing.T) {
 	assert.NoError(t, err)
 
 	expectedResponse := dtos.CompareResponse{
-		StatusCodes:     nil,
+		StatusCodes:     []int{http.StatusOK, http.StatusOK},
 		Headers:         make(map[string][]string),
 		BodyDifferences: []dtos.BodyDifference{},
 	}

@@ -15,7 +15,7 @@
   var SENTINEL_A_MISSING = "key not found in first JSON";
   var SENTINEL_B_MISSING = "key not found in second JSON";
 
-  var VOLATILE_HEADERS = ["date", "age", "cf-ray", "set-cookie", "via", "expires", "x-cache", "x-cache-hits", "x-served-by", "x-request-id"];
+  var VOLATILE_HEADERS = ["date", "age", "cf-ray", "set-cookie", "via", "expires", "x-cache", "x-cache-hits", "x-served-by", "x-request-id", "report-to", "reporting-endpoints", "nel"];
 
   function isVolatileHeader(key) {
     return VOLATILE_HEADERS.indexOf(key.toLowerCase()) !== -1;
